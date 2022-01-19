@@ -739,6 +739,8 @@ void ProcessTransportLayer(EthernetHeaderStruct* ethernetHeader, IpHeaderStruct*
 #define ETHER_TYPE_ARP 0x0806
 #define ETHER_TYPE_IEEE8021Q 0x8100
 #define ETHER_TYPE_IPV6 0x86DD
+#define ETHER_TYPE_VNTAG 0x8926
+
 void HandlePacket(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data)
 {
 	time_t now = time(NULL);
@@ -798,6 +800,11 @@ void HandlePacket(u_char *param, const struct pcap_pkthdr *header, const u_char 
 	if(ntohs(ethernetHeader->type) == ETHER_TYPE_IEEE8021Q)
 	{
 		ipHeader = (IpHeaderStruct*)((char*)ethernetHeader + sizeof(EthernetHeaderStruct) + 4);
+	}
+	else if(ntohs(ethernetHeader->type) == ETHER_TYPE_VNTAG)
+	{
+		// LOG4CXX_INFO(s_packetLog, CStdString("IAT: VN-TAG PACKET FOUND"));
+		ipHeader = (IpHeaderStruct*)((char*)ethernetHeader + sizeof(EthernetHeaderStruct) + 10);
 	}
 	else if(ntohs(ethernetHeader->type) == ETHER_TYPE_IPV4 || ntohs(ethernetHeader->type) == ETHER_TYPE_ARP)
 	{
