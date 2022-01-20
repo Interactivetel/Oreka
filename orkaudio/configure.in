@@ -40,7 +40,7 @@ if [! grep "release 6" /etc/redhat-release]; then
 fi
 
 if [ egrep -i "release [67]" /etc/redhat-release ]; then
-	speex_lib=orkspeex
+	speex_lib=speex
 fi
 
 AM_PROG_LIBTOOL
