@@ -12,15 +12,15 @@ INCLUDES = -I@top_srcdir@ -I../orkbasecxx -I/opt/opus/include/opus -I../orkbasec
 SUBDIRS = audiocaptureplugins filters
 #orkaudio_LDADD = $(top_builddir)/messages/libmessages.la 
 
-orkaudioconfdir = /etc/orkaudio
+orkaudioconfdir = ${DESTDIR}/etc/orkaudio
 orkaudioconf_DATA = \
 	logging-linux-template.properties \
 	config-linux-template.xml
 install-orkaudioconfDATA:
-	mkdir -p /etc/orkaudio
-	cp logging-linux-template.properties /etc/orkaudio/logging.properties
-	cp config-linux-template.xml /etc/orkaudio/config.xml
-	ldconfig
-	mkdir -p /var/log/orkaudio
+	mkdir -p ${DESTDIR}/etc/orkaudio
+	cp logging-linux-template.properties ${DESTDIR}/etc/orkaudio/logging.properties
+	cp config-linux-template.xml ${DESTDIR}/etc/orkaudio/config.xml
+	sudo ldconfig
+	mkdir -p ${DESTDIR}/var/log/orkaudio
 
 
