@@ -1,0 +1,22 @@
+<config>
+    ...
+
+    <!-- Audio file storage format: choose from: native, gsm, ulaw, alaw, pcmwav -->
+    <StorageAudioFormat>pcmwav</StorageAudioFormat>
+    <StereoRecording>true</StereoRecording>
+    <TapeNumChannels>2</TapeNumChannels>
+
+    ...
+
+    <VoIpPlugin>
+        ...
+        
+        <!-- When recording in stereo, we need to ensure that the local speaker always appears on the same side of the stereo wav file. -->
+        <RtpS1S2MappingDeterministic>yes</RtpS1S2MappingDeterministic>
+        <!-- Optionally, if it's important to control which side is local -->
+        <RtpS1S2MappingDeterministicS1IsLocal>yes</RtpS1S2MappingDeterministicS1IsLocal>
+
+        ...
+    
+    </VoIpPlugin>
+</config>
