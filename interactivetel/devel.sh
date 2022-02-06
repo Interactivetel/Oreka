@@ -67,6 +67,10 @@ install_binary_deps() {
         # orkaudio dependencies, log4cxx and log4cxx-devel: v0.10.0
         sudo apt-get -y install libapr1-dev libpcap-dev libboost-all-dev libxerces-c-dev libsndfile1-dev \
             libspeex-dev libopus-dev  libssl-dev liblog4cxx-dev
+
+        if [[ "$DIST" = "debian" && "$VER" -ge 11 ]]; then
+            sudo apt-get -y install libbcg729-dev
+        fi
     fi
 
     printf "\n\n"
@@ -85,7 +89,7 @@ install_source_deps() {
     pushd "$BUILD_DIR/opus-1.3.1" &> /dev/null
     ./configure --prefix=/opt/opus --enable-shared=no --with-pic
     make clean
-    make -j
+    make -j4
     make install
     ln -sf /opt/opus/lib/libopus.a /opt/opus/lib/libopusstatic.a
     popd &> /dev/null
@@ -98,12 +102,16 @@ install_source_deps() {
 
     pushd /opt/silk/SILKCodec/SILK_SDK_SRC_FIX &> /dev/null
     make clean
-    CFLAGS="-fPIC" make -j lib
+    CFLAGS="-fPIC" make -j4 lib
     popd &> /dev/null
 
     printf "\n\n"
 
     # build G729 codec
+    if [[ "$DIST" = "debian" && "$VER" -ge 11 ]]; then
+        return
+    fi
+
     header "Building G729 lib"
     tar -C "$BUILD_DIR" -xvpf libs/bcg729-1.1.1.tar.gz
 
@@ -114,7 +122,7 @@ install_source_deps() {
         cmake . -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_SHARED=YES -DENABLE_STATIC=NO -DCMAKE_SKIP_INSTALL_RPATH=ON
     fi
     make clean
-    make -j
+    make -j4
     sudo make install
     popd &> /dev/null
 
@@ -176,11 +184,11 @@ setup() {
 
     # log files
     sudo mkdir -p /var/log/orkaudio
-    sudo chown -R jmrbcu /var/log/orkaudio
+    sudo chown -R "$USER" /var/log/orkaudio
 
     # config files
     sudo mkdir -p /etc/orkaudio
-    sudo chown -R jmrbcu /etc/orkaudio
+    sudo chown -R "$USER" /etc/orkaudio
     cp -f conf/* /etc/orkaudio/
     mv /etc/orkaudio/config-devel.xml /etc/orkaudio/config.xml
     sed -i -e "s|_PLUGINS_DIR_|$ORKAUDIO_DIR/plugins/|" /etc/orkaudio/config.xml

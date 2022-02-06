@@ -140,6 +140,8 @@ install_source_deps() {
     $SUDO make DESTDIR=$DESTDIR install
     popd &> /dev/null
 
+    sudo ldconfig
+
     printf "\n\n"
 }
 
@@ -187,8 +189,8 @@ install_all() {
     fi
 
     system-detect
-    if [[ "$OS" != "linux" ]]; then
-      abort "Unsupported operating system: $OS, we only support linux"
+    if [[ "$BASE_DIST" != "debian" && "$BASE_DIST" != "redhat" ]]; then
+      abort "Unsupported linux distribution: $OS/$DIST, we only support Debian and CentOS linux distros"
     fi
     
     install_binary_deps
