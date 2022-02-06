@@ -4,7 +4,7 @@
 *.la
 .libs
 .deps
-Makefile*
+Makefile.in
 -*
 ReleaseVC12
 *sdf
