@@ -93,6 +93,15 @@ const int pcap_live_snaplen = 65535;
 #define IPPROTO_GRE 47
 #define PROT_TRP 0x6558	//Transparent Ethernet Bridging
 
+// TZSP
+#define TZSP_PORT 0x9090
+#define TZSP_PROTOCOL_VERSION 0x01
+#define TZSP_TYPE_RECEIVED_TAG_LIST 0x00
+#define TZSP_TYPE_PACKET_FOR_TRANSMIT 0x01
+#define TZSP_ENCAP_ETHERNET 0x01
+#define TZSP_TAG_END 0x01
+#define TZSP_TAG_PADDING 0x00
+
 //========================================================
 class PcapHandleData
 {
@@ -673,13 +682,107 @@ bool TryIpPacketV4(IpHeaderStruct* ipHeader)
 	return true;
 }
 
+void StripTzspEncapsulation(UdpHeaderStruct* udpHeader, u_char* packetEnd) {
+	TzspHeaderStruct* tzspHeader = (TzspHeaderStruct*)((char*)udpHeader + sizeof(UdpHeaderStruct));
+	unsigned short udpHeaderLength = ntohs(udpHeader->len);
+
+	if (udpHeaderLength < sizeof(TzspHeaderStruct))
+		return;
+
+	if (tzspHeader->version != TZSP_PROTOCOL_VERSION)
+		return;
+
+	if (tzspHeader->type != TZSP_TYPE_RECEIVED_TAG_LIST && tzspHeader->type != TZSP_TYPE_PACKET_FOR_TRANSMIT)
+		return;
+
+	if (ntohs(tzspHeader->encap) != TZSP_ENCAP_ETHERNET)
+		return;
+
+
+	// skip TZSP tag list
+	bool foundEndTag = false;
+	unsigned char* payload = (unsigned char*) tzspHeader + sizeof(TzspHeaderStruct);
+	while (payload < packetEnd)
+	{
+		TzspTagStruct *tag = (TzspTagStruct*) payload;
+		if (tag->type == TZSP_TAG_END)
+		{
+			foundEndTag = true;
+			payload++;
+			break;
+		}
+		else if (tag->type == TZSP_TAG_PADDING)
+		{
+			payload++;
+		}
+		else
+		{
+			if (payload + sizeof(TzspTagStruct) > packetEnd
+					|| payload + sizeof(TzspTagStruct) + tag->length > packetEnd)
+			{
+				LOG4CXX_ERROR(s_packetStatsLog, "Malformed TZSP packet (truncated), discarding...");
+				return;
+			}
+			payload += sizeof(TzspTagStruct) + tag->length;
+		}
+	}
+
+	if (!foundEndTag)
+	{
+		LOG4CXX_ERROR(s_packetStatsLog, "Truncated TZSP packet (no END tag)");
+		return;
+	}
+
+	EthernetHeaderStruct* encapsulatedEthernetHeader = (EthernetHeaderStruct*)(payload);
+	IpHeaderStruct* encapsulatedIpHeader = NULL;
+
+	if (ntohs(encapsulatedEthernetHeader->type) == 0x8100) // VLAN
+	{
+		encapsulatedIpHeader = (IpHeaderStruct*) ((char*) encapsulatedEthernetHeader + sizeof(EthernetHeaderStruct) + 4);
+	}
+	else if (ntohs(encapsulatedEthernetHeader->type) == 0x8926)  //VNTAG
+	{
+		encapsulatedIpHeader = (IpHeaderStruct*) ((char*) encapsulatedEthernetHeader + sizeof(EthernetHeaderStruct) + 10);
+	}
+	else if (ntohs(encapsulatedEthernetHeader->type) == 0x0800 || ntohs(encapsulatedEthernetHeader->type) == 0x0806)  // IPv4 or ARP
+	{
+		encapsulatedIpHeader = (IpHeaderStruct*) ((char*) encapsulatedEthernetHeader + sizeof(EthernetHeaderStruct));
+	}
+	else if (ntohs(encapsulatedEthernetHeader->type) == 0x86DD)  // IPv6
+	{
+		return;
+	}
+
+	if(TryIpPacketV4(encapsulatedIpHeader) != true)
+	{
+		return;
+	}
+
+	size_t encapsulatedIpHeaderLength = encapsulatedIpHeader->headerLen();
+	u_char* encapsulatedIpPacketEnd = (u_char*)encapsulatedIpHeader + encapsulatedIpHeader->packetLen();
+
+	if(encapsulatedIpHeader->ip_p == IPPROTO_UDP)
+	{
+		DetectUsefulUdpPacket(encapsulatedEthernetHeader, encapsulatedIpHeader, encapsulatedIpHeaderLength, encapsulatedIpPacketEnd);
+	}
+	else if(encapsulatedIpHeader->ip_p == IPPROTO_TCP)
+	{
+		DetectUsefulTcpPacket(encapsulatedEthernetHeader, encapsulatedIpHeader, encapsulatedIpHeaderLength, encapsulatedIpPacketEnd);
+	}
+
+}
+
 void ProcessTransportLayer(EthernetHeaderStruct* ethernetHeader, IpHeaderStruct* ipHeader) {
 	size_t ipHeaderLength = ipHeader->headerLen();
 	u_char* ipPacketEnd    = reinterpret_cast<unsigned char*>(ipHeader) + ipHeader->packetLen();
 
 	if(ipHeader->ip_p == IPPROTO_UDP)
 	{
-		DetectUsefulUdpPacket(ethernetHeader, ipHeader, ipHeaderLength, ipPacketEnd);
+		UdpHeaderStruct* udpHeader = (UdpHeaderStruct*)((char *)ipHeader + ipHeaderLength);
+		if (ntohs(udpHeader->dest) == TZSP_PORT)
+			StripTzspEncapsulation(udpHeader, ipPacketEnd);
+		else
+			DetectUsefulUdpPacket(ethernetHeader, ipHeader, ipHeaderLength, ipPacketEnd);
 	}
 	else if(ipHeader->ip_p == IPPROTO_TCP)
 	{

@@ -109,6 +109,19 @@ typedef struct
 	unsigned short check;			// UDP Checksum
 } UdpHeaderStruct;
 
+// Structure of TZSP header
+typedef struct {
+	uint8_t version;          // Protocol version, always: 0x01
+	uint8_t type;             // Type of frame
+	uint16_t encap;    // Encapsulated protocol
+} __attribute__((packed)) TzspHeaderStruct;
+
+typedef struct {
+	uint8_t type;
+	uint8_t length;
+	u_char data[];
+} __attribute__((packed)) TzspTagStruct;
+
 #define RTP_PT_PCMU 0
 #define RTP_PT_PCMA 8
 
