@@ -21,6 +21,7 @@ autoscan.log
 autoscan-*.log
 aclocal.m4
 compile
+config.h
 config.cache
 config.guess
 config.h.in
@@ -44,7 +45,7 @@ texinfo.tex
 
 # http://www.gnu.org/software/m4/
 
-libtool.m4
+libtool
 ltoptions.m4
 ltsugar.m4
 ltversion.m4
@@ -195,3 +196,4 @@ orkaudio/audiocaptureplugins/*/AudioCapturePluginCommon.cpp
 interactivetel/.vagrant
 interactivetel/packages
 !config*.xml
+!Config.h
