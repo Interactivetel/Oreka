@@ -17,26 +17,19 @@ libtool
 ltmain.sh
 missing
 stamp-h1
-nothing added to commit but untracked files present (use "git add" to track)
+orkbasecxx/compile
+orkaudio/compile
 
+# IntelliJ and VSCode
 .idea/
 .vscode/
-interactivetel/.build/
 
-.gitignore
-
-# General
+# OSX
 .DS_Store
 .AppleDouble
 .LSOverride
-
-# Icon must end with two \r
-Icon
-
-# Thumbnails
+Icon
 ._*
-
-# Files that might appear in the root of a volume
 .DocumentRevisions-V100
 .fseventsd
 .Spotlight-V100
@@ -44,10 +37,12 @@ Icon
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
-
-# Directories potentially created on remote AFP share
 .AppleDB
 .AppleDesktop
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# IAT
+interactivetel/.vagrant
+interactivetel/packages
