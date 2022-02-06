@@ -55,7 +55,7 @@ install_binary_deps() {
 
         # orkaudio dependencies, log4cxx and log4cxx-devel: v0.10.0
         sudo yum -y install apr-devel libpcap-devel boost-devel xerces-c-devel libsndfile-devel \
-            speex-devel libogg-devel openssl-devel log4cxx log4cxx-devel gawk
+            speex-devel libogg-devel openssl-devel log4cxx log4cxx-devel gawk libcap-devel
     else
         # update the system
         sudo apt-get -y update
@@ -66,7 +66,7 @@ install_binary_deps() {
 
         # orkaudio dependencies, log4cxx and log4cxx-devel: v0.10.0
         sudo apt-get -y install libapr1-dev libpcap-dev libboost-all-dev libxerces-c-dev libsndfile1-dev \
-            libspeex-dev libopus-dev  libssl-dev liblog4cxx-dev
+            libspeex-dev libopus-dev  libssl-dev liblog4cxx-dev libcap-dev
 
         if [[ "$DIST" = "debian" && "$VER" -ge 11 ]]; then
             sudo apt-get -y install libbcg729-dev

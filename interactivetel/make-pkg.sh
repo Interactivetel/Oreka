@@ -84,7 +84,7 @@ make-package() {
             --description 'VoIP Call Recording Platform' \
             --url 'https://interactivetel.com/totaltrack' --category 'Applications/Communications' \
             -d apr-devel -d libpcap-devel -d boost-devel -d xerces-c-devel -d libsndfile-devel \
-            -d speex-devel -d libogg-devel -d openssl-devel -d log4cxx-devel \
+            -d speex-devel -d libogg-devel -d openssl-devel -d log4cxx-devel -d libcap-devel \
             --after-install "./dist/after-install.sh" \
             --before-remove "./dist/before-remove.sh" \
             --after-upgrade "./dist/after-upgrade.sh" \
@@ -107,7 +107,7 @@ make-package() {
             --description 'VoIP Call Recording Platform' \
             --url 'https://interactivetel.com/totaltrack' --category 'comm' \
             -d libapr1-dev -d libpcap-dev -d libboost-all-dev -d libxerces-c-dev -d libsndfile1-dev \
-            -d libspeex-dev -d libopus-dev  -d libssl-dev -d liblog4cxx-dev \
+            -d libspeex-dev -d libopus-dev  -d libssl-dev -d liblog4cxx-dev -d libcap-dev \
             --after-install "./dist/after-install.sh" \
             --before-remove "./dist/before-remove.sh" \
             --after-upgrade "./dist/after-upgrade.sh" \
