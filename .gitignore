@@ -190,7 +190,6 @@ orkaudio/audiocaptureplugins/*/AudioCapturePluginCommon.cpp
 
 # IntelliJ and VSCode
 .idea/
-.vscode/
 
 # IAT
 interactivetel/.vagrant
