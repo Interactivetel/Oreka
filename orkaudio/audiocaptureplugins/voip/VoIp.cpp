@@ -753,6 +753,10 @@ void StripTzspEncapsulation(UdpHeaderStruct* udpHeader, u_char* packetEnd) {
 		return;
 	}
 
+	if (!encapsulatedIpHeader) {
+		return;
+	}
+
 	if(TryIpPacketV4(encapsulatedIpHeader) != true)
 	{
 		return;
@@ -779,10 +783,12 @@ void ProcessTransportLayer(EthernetHeaderStruct* ethernetHeader, IpHeaderStruct*
 	if(ipHeader->ip_p == IPPROTO_UDP)
 	{
 		UdpHeaderStruct* udpHeader = (UdpHeaderStruct*)((char *)ipHeader + ipHeaderLength);
-		if (ntohs(udpHeader->dest) == TZSP_PORT)
-			StripTzspEncapsulation(udpHeader, ipPacketEnd);
-		else
+		if (ntohs(udpHeader->dest) == TZSP_PORT) {
+			StripTzspEncapsulation(udpHeader, ipPacketEnd); 
+		}
+		else {
 			DetectUsefulUdpPacket(ethernetHeader, ipHeader, ipHeaderLength, ipPacketEnd);
+		}
 	}
 	else if(ipHeader->ip_p == IPPROTO_TCP)
 	{
