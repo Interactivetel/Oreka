@@ -13,6 +13,7 @@ test-driver
 ylwrap
 .deps/
 .dirstamp
+.libs/
 
 # http://www.gnu.org/software/autoconf
 
