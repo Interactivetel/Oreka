@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "Debug OrkAudio",
             "type": "cppdbg",
             "preLaunchTask": "Build OrkAudio",
             "request": "launch",
@@ -16,7 +16,7 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "/home/jmrbcu/sudogdb.sh",
+            "miDebuggerPath": "${workspaceFolder}/interactivetel/gdb-root.sh",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
