@@ -193,7 +193,7 @@ orkaudio/audiocaptureplugins/*/AudioCapturePluginCommon.cpp
 .idea/
 
 # IAT
-interactivetel/.vagrant
+.vagrant
 interactivetel/packages
 !config*.xml
 !Config.h
