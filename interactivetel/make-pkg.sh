@@ -66,8 +66,8 @@ make-package() {
     # install orkaudio
     VM="$DIST-$VER"
     header "Installing OrkAudio at $(readlink -f ./packages/$VM)"
-    # rm -rf "./packages/$VM"
-    # ./install.sh $(readlink -f "./packages/$VM")
+    rm -rf "./packages/$VM"
+    ./install.sh $(readlink -f "./packages/$VM")
 
     # remove static libs
     find "./packages/$VM" -name "*.la" -type f -exec rm {} +
