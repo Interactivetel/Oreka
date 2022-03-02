@@ -60,7 +60,7 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  config.vm.synced_folder "../", "/home/vagrant/Oreka", type: "virtualbox"
+  config.vm.synced_folder ".", "/home/vagrant/Oreka", type: "virtualbox"
   config.vm.provision "shell", privileged: false, inline: <<-'SCRIPT'
     #!/usr/bin/env bash
     set -e
