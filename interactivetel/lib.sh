@@ -19,19 +19,10 @@ if [[ -t 1 ]]; then
 fi
 
 
-CENTOS_ISO_REPO=$(cat << EOM
-[C6.10-iso]
-name=Centos-6.10 - ISO
-baseurl=http://packages.interactivetel.com/centos6-iso/
-enabled=1
-gpgcheck=0
-EOM
-)
-
 CENTOS_REPO=$(cat << EOM
 [C6.10-base]
 name=CentOS-6.10 - Base
-baseurl=http://vault.centos.org/6.10/os/\$basearch/
+baseurl=https://packages.interactivetel.com/centos/6.10/os/\$basearch/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
 enabled=1
@@ -39,7 +30,7 @@ metadata_expire=never
 
 [C6.10-updates]
 name=CentOS-6.10 - Updates
-baseurl=http://vault.centos.org/6.10/updates/\$basearch/
+baseurl=https://packages.interactivetel.com/centos/6.10/updates/\$basearch/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
 enabled=1
@@ -47,143 +38,78 @@ metadata_expire=never
 
 [C6.10-extras]
 name=CentOS-6.10 - Extras
-baseurl=http://vault.centos.org/6.10/extras/\$basearch/
+baseurl=https://packages.interactivetel.com/centos/6.10/extras/\$basearch/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
 enabled=1
 metadata_expire=never
-
-[C6.10-contrib]
-name=CentOS-6.10 - Contrib
-baseurl=http://vault.centos.org/6.10/contrib/\$basearch/
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
-enabled=0
-metadata_expire=never
-
-[C6.10-centosplus]
-name=CentOS-6.10 - CentOSPlus
-baseurl=http://vault.centos.org/6.10/centosplus/\$basearch/
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
-enabled=0
-metadata_expire=never
 EOM
 )
-
 
 EPEL_REPO=$(cat << EOM
 [epel]
 name=Extra Packages for Enterprise Linux 6 - \$basearch
-#baseurl=http://download.fedoraproject.org/pub/epel/6/\$basearch
-baseurl=https://archives.fedoraproject.org/pub/archive/epel/6/x86_64
-#mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-6&arch=\$basearch
+baseurl=https://packages.interactivetel.com/centos/6.10/epel/\$basearch/
 failovermethod=priority
 enabled=1
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
-
-[epel-debuginfo]
-name=Extra Packages for Enterprise Linux 6 - \$basearch - Debug
-#baseurl=http://download.fedoraproject.org/pub/epel/6/\$basearch/debug
-mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-debug-6&arch=\$basearch
-failovermethod=priority
-enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
-gpgcheck=1
-
-[epel-source]
-name=Extra Packages for Enterprise Linux 6 - \$basearch - Source
-#baseurl=http://download.fedoraproject.org/pub/epel/6/SRPMS
-baseurl=https://archives.fedoraproject.org/pub/archive/epel/6/SRPMS
-#mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-source-6&arch=\$basearch
-failovermethod=priority
-enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
-gpgcheck=1
 EOM
 )
-
 
 SCL_REPO=$(cat << EOM
 [centos-sclo-sclo]
 name=CentOS-6 - SCLo sclo
-baseurl=http://vault.centos.org/centos/6/sclo/\$basearch/sclo/
+baseurl=https://packages.interactivetel.com/centos/6.10/sclo/\$basearch/sclo/
 gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
-
-[centos-sclo-sclo-testing]
-name=CentOS-6 - SCLo sclo Testing
-baseurl=http://buildlogs.centos.org/centos/6/sclo/\$basearch/sclo/
-gpgcheck=0
-enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
-
-[centos-sclo-sclo-source]
-name=CentOS-6 - SCLo sclo Sources
-baseurl=http://vault.centos.org/centos/6/sclo/Source/sclo/
-gpgcheck=1
-enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
-
-[centos-sclo-sclo-debuginfo]
-name=CentOS-6 - SCLo sclo Debuginfo
-baseurl=http://debuginfo.centos.org/centos/6/sclo/\$basearch/
-gpgcheck=1
-enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
 EOM
 )
-
 
 SCL_RH_REPO=$(cat << EOM
 [centos-sclo-rh]
 name=CentOS-6 - SCLo rh
-baseurl=http://vault.centos.org/centos/6/sclo/\$basearch/rh/
+baseurl=https://packages.interactivetel.com/centos/6.10/sclo/\$basearch/rh/
 gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
-
-[centos-sclo-rh-testing]
-name=CentOS-6 - SCLo rh Testing
-baseurl=http://buildlogs.centos.org/centos/6/sclo/\$basearch/rh/
-gpgcheck=0
-enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
-
-[centos-sclo-rh-source]
-name=CentOS-6 - SCLo rh Sources
-baseurl=http://vault.centos.org/centos/6/sclo/Source/rh/
-gpgcheck=1
-enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
-
-[centos-sclo-rh-debuginfo]
-name=CentOS-6 - SCLo rh Debuginfo
-baseurl=http://debuginfo.centos.org/centos/6/sclo/\$basearch/
-gpgcheck=1
-enabled=0
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
 EOM
 )
-
 
 TOTALTRACK_REPO=$(cat << EOM
 [totaltrack]
 name=TotalTrack
-baseurl=http://packages.interactivetel.com/centos/6/x86_64/
+baseurl=https://totaltrack:_PASSWD_@packages.interactivetel.com/centos/6.10/totaltrack/x86_64/
 enabled=1
 gpgcheck=0
 EOM
 )
 
-
-IRONTEC_REPO=$(cat << EOM
-[irontec]
-name=Irontec RPMs repository
-baseurl=http://packages.irontec.com/centos/6/x86_64/
+SNGREP_REPO=$(cat << EOM
+[sngrep]
+name=Sngrep RPMs repository
+baseurl=https://packages.interactivetel.com/centos/6.10/sngrep/x86_64/
 enabled=1
+gpgcheck=1
+EOM
+)
+
+GIT_REPO=$(cat << EOM
+[WANdisco-git]
+name=WANdisco Distribution of git
+baseurl=https://packages.interactivetel.com/centos/6.10/git/x86_64/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-WANdisco
+EOM
+)
+
+MARIADB_REPO=$(cat << EOM
+[mariadb]
+name = MariaDB
+baseurl = https://packages.interactivetel.com/centos/6.10/mariadb/x86_64/
+gpgkey=https://packages.interactivetel.com/centos/6.10/mariadb/x86_64/RPM-GPG-KEY-MariaDB
 gpgcheck=1
 EOM
 )
@@ -229,13 +155,31 @@ abort() {
 install-custom-repos() {
   # must run system-detect first
   if [[ "$BASE_DIST" == "redhat" ]]; then
+    # totaltrack
     echo "$TOTALTRACK_REPO" | sudo tee /etc/yum.repos.d/totaltrack.repo >/dev/null 2>&1
-    echo "$IRONTEC_REPO" | sudo tee /etc/yum.repos.d/irontec.repo >/dev/null 2>&1
-    sudo rpm --import http://packages.irontec.com/public.key || sudo rpm --import keys/irontec.key
+    if [[ -z "$TT_PASSWD" ]]; then
+      read -r -s -p "Password for TotalTrack repository: " TT_PASSWD
+    fi
+    sed -i -e "s/_PASSWD_/$TT_PASSWD/" /etc/yum.repos.d/totaltrack.repo
+
+    # recent version of git
+    if ! rpm -ql wandisco-git-release >/dev/null 2>&1; then
+      sudo yum -y install https://packages.interactivetel.com/centos/6.10/git/x86_64/wandisco-git-release-6-1.noarch.rpm
+    fi
+    sudo rm -f /etc/yum.repos.d/wandisco-git*
+    echo "$GIT_REPO" | sudo tee /etc/yum.repos.d/wandisco-git.repo >/dev/null 2>&1
+
+    # sngrep
+    sudo rm -f /etc/yum.repos.d/irontec.repo
+    echo "$SNGREP_REPO" | sudo tee /etc/yum.repos.d/sngrep.repo >/dev/null 2>&1
+    sudo rpm --import https://packages.interactivetel.com/centos/6.10/sngrep/x86_64/public.key
+
+    # mariadb
+    echo "$MARIADB_REPO" | sudo tee /etc/yum.repos.d/mariadb.repo >/dev/null 2>&1
   elif [[ "$BASE_DIST" == "debian" ]]; then
-    echo -e "\n\n## IAT" | sudo tee -a /etc/apt/sources.list >/dev/null 2>&1
-    echo "deb [trusted=yes] http://packages.interactivetel.com/debian/$VER/x86_64 ./" | sudo tee -a /etc/apt/sources.list >/dev/null 2>&1
-    sudo apt-get -y update
+    # totaltrack
+    echo -e "\n\n## IAT" | tee -a /etc/apt/sources.list >/dev/null 2>&1
+    echo "deb [trusted=yes] https://packages.interactivetel.com/debian/$VER/x86_64 ./" | sudo tee -a /etc/apt/sources.list >/dev/null 2>&1
   fi
   printf "\n"
 }
@@ -243,38 +187,37 @@ install-custom-repos() {
 fix-centos6-repos() {
   # must run system-detect first
   if [[ "$BASE_DIST" = "redhat" && $(echo "$VER" | cut -d '.' -f 1) -eq 6 ]]; then
-    # fix ssl errors
-    echo "$CENTOS_ISO_REPO" | sudo tee /etc/yum.repos.d/CentOS-ISO.repo >/dev/null 2>&1
-    sudo yum -y update ca-certificates nss curl --disablerepo=*
-    sudo rm -f /etc/yum.repos.d/CentOS-ISO.repo
-    sudo yum clean all
-
     # base
-    test -f /etc/yum.repos.d/CentOS-Base.repo && sudo cp /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.old
+    sudo rm -f /etc/yum.repos.d/*
     echo "$CENTOS_REPO" | sudo tee /etc/yum.repos.d/CentOS-Base.repo >/dev/null 2>&1
 
-    # remove unused repositories
-    sudo rm -f /etc/yum.repos.d/CentOS-fasttrack.repo* /etc/yum.repos.d/CentOS-Vault.repo* \
-      /etc/yum.repos.d/CentOS-Debuginfo.repo* /etc/yum.repos.d/CentOS-Media.repo \
-      /etc/yum.repos.d/*rpmforge* /etc/yum.repos.d/*rpmfusion*
+    # fix ssl issues
+    sudo yum -y update ca-certificates nss curl
 
     # fix epel
-    sudo yum -y remove epel-release --disablerepo=*
+    if ! rpm -ql epel-release >/dev/null 2>&1; then
+      sudo yum -y install epel-release
+    fi
     sudo rm -f /etc/yum.repos.d/epel*
-    sudo yum -y install https://archives.fedoraproject.org/pub/archive/epel/6/x86_64/epel-release-6-8.noarch.rpm --disablerepo=*
     echo "$EPEL_REPO" | sudo tee /etc/yum.repos.d/epel.repo >/dev/null 2>&1
 
     # fix scl
-    sudo yum -y remove centos-release-scl centos-release-scl-rh --disablerepo=*
+    if ! rpm -ql centos-release-scl >/dev/null 2>&1; then
+      sudo yum -y install centos-release-scl
+    fi
+
+    if ! rpm -ql centos-release-scl-rh >/dev/null 2>&1; then
+      sudo yum -y install centos-release-scl
+    fi
+
     sudo rm -f /etc/yum.repos.d/CentOS-SCL*
-    sudo yum -y install centos-release-scl centos-release-scl-rh
     echo "$SCL_REPO" | sudo tee /etc/yum.repos.d/CentOS-SCLo-scl.repo >/dev/null 2>&1
     echo "$SCL_RH_REPO" | sudo tee /etc/yum.repos.d/CentOS-SCLo-scl-rh.repo >/dev/null 2>&1
-    sudo rpm --import https://www.centos.org/keys/RPM-GPG-KEY-CentOS-SIG-SCLo || sudo rpm --import keys/scl.key
   fi
 
   printf "\n"
 }
+
 
 system-detect() {
   # This function will set the following enviroment variables:
