@@ -160,7 +160,7 @@ install-custom-repos() {
     if [[ -z "$TT_PASSWD" ]]; then
       read -r -s -p "Password for TotalTrack repository: " TT_PASSWD
     fi
-    sed -i -e "s/_PASSWD_/$TT_PASSWD/" /etc/yum.repos.d/totaltrack.repo
+    sudo sed -i -e "s/_PASSWD_/$TT_PASSWD/" /etc/yum.repos.d/totaltrack.repo
 
     # recent version of git
     if ! rpm -ql wandisco-git-release >/dev/null 2>&1; then
@@ -207,7 +207,7 @@ fix-centos6-repos() {
     fi
 
     if ! rpm -ql centos-release-scl-rh >/dev/null 2>&1; then
-      sudo yum -y install centos-release-scl
+      sudo yum -y install centos-release-scl-rh
     fi
 
     sudo rm -f /etc/yum.repos.d/CentOS-SCL*
