@@ -20,6 +20,9 @@ SILK_DIR="$BUILD_DIR/$SILK_LIB/SILKCodec/SILK_SDK_SRC_FIX"
 G729_LIB=bcg729-1.1.1
 G729_DIR="$BUILD_DIR/$G729_LIB"
 
+BOOST_LIB=boost_1_79_0
+BOOST_DIR="$BUILD_DIR/$BOOST_LIB"
+
 usage() {
     info "::: Description:"
     info ":::   Install OrkAudio into the system."
@@ -71,7 +74,7 @@ install_binary_deps() {
             net-tools bind-utils
 
         # orkaudio dependencies, log4cxx and log4cxx-devel: v0.10.0
-        sudo yum -y install apr-devel libpcap-devel boost-devel xerces-c-devel libsndfile-devel \
+        sudo yum -y install apr-devel libpcap-devel xerces-c-devel libsndfile-devel \
             speex-devel libogg-devel openssl-devel log4cxx log4cxx-devel libcap-devel
     elif [[ "$BASE_DIST" = "debian" ]]; then
         # update the system
@@ -99,7 +102,9 @@ install_binary_deps() {
 install_source_deps() {
     # build opus codec
     header "::: Building Opus lib"
-    tar -C "$BUILD_DIR" -xvpf "libs/$OPUS_LIB.tar.gz"
+
+    wget --no-check-certificate -P "$BUILD_DIR" https://packages.interactivetel.com/libs/opus-1.3.1.tar.gz
+    tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$OPUS_LIB.tar.gz"
 
     pushd "$OPUS_DIR" &> /dev/null
     ./configure --enable-shared=no --with-pic
@@ -111,8 +116,9 @@ install_source_deps() {
     printf "\n\n"
 
     # build silk codec
-    header "Building Silk lib ...\n\n"
-    tar -C "$BUILD_DIR" -xvpf "libs/$SILK_LIB".tgz
+    header "Building Silk lib ..."
+    wget --no-check-certificate -P "$BUILD_DIR" https://packages.interactivetel.com/libs/silk.tgz
+    tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$SILK_LIB".tgz
 
     pushd "$SILK_DIR" &> /dev/null
     make clean
@@ -121,13 +127,21 @@ install_source_deps() {
 
     printf "\n\n"
 
-    # build G729 codec
+    if [[ "$BASE_DIST" = "redhat" ]]; then
+        # boost
+        header "Installing boost library at: $BOOST_DIR"
+        wget --no-check-certificate -P "$BUILD_DIR" https://packages.interactivetel.com/libs/boost_1_79_0.tar.gz
+        tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$BOOST_LIB.tar.gz"
+    fi
+
+    # build G729 codec for all dist except debian 11 and up
     if [[ "$DIST" = "debian" && "$VER" -ge 11 ]]; then
         return
     fi
     
     header "Installing G729 lib"
-    tar -C "$BUILD_DIR" -xvpf "libs/$G729_LIB.tar.gz"
+    wget --no-check-certificate -P "$BUILD_DIR" https://packages.interactivetel.com/libs/bcg729-1.1.1.tar.gz
+    tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$G729_LIB.tar.gz"
 
     pushd "$G729_DIR" &> /dev/null
     if [[ "$BASE_DIST" == "redhat" ]]; then
@@ -148,13 +162,14 @@ install_source_deps() {
 install_orkbasecxx() {
     header "Installing OrkBaseCXX"
 
-    # copy orkbasecxx to the build dir
     cp -a ../orkbasecxx "$BUILD_DIR"
-
-    # build and install orkaudio
     pushd "$BUILD_DIR/orkbasecxx" &> /dev/null
     autoreconf  -f -i
-    ./configure --prefix=/usr CXX=g++ LDFLAGS="-L$OPUS_DIR/.libs" CPPFLAGS="-DXERCES_3 -I$OPUS_DIR/include"
+    if [[ "$BASE_DIST" = "redhat" ]]; then
+        ./configure --prefix=/usr CXX=g++ LDFLAGS="-L$OPUS_DIR/.libs" CPPFLAGS="-DXERCES_3 -I$OPUS_DIR/include -I$BOOST_DIR"
+    else
+        ./configure --prefix=/usr CXX=g++ LDFLAGS="-L$OPUS_DIR/.libs" CPPFLAGS="-DXERCES_3 -I$OPUS_DIR/include"
+    fi
     make clean
     make -j4
     $SUDO make DESTDIR=$DESTDIR install
@@ -166,14 +181,18 @@ install_orkbasecxx() {
 install_orkaudio() {
     header "Installing OrkAudio"
 
-    # copy orkbasecxx to the build dir
     cp -a ../orkaudio "$BUILD_DIR"
-
     pushd "$BUILD_DIR/orkaudio" &> /dev/null
     autoreconf  -f -i
-    ./configure --prefix=/usr CXX=g++ \
+    if [[ "$BASE_DIST" = "redhat" ]]; then
+        ./configure --prefix=/usr CXX=g++ \
+            LDFLAGS="-Wl,-rpath=/usr/lib,-L$SILK_DIR -L$OPUS_DIR/.libs -L$(readlink -f ../orkbasecxx/.libs) -L$G729_DIR/src" \
+            CPPFLAGS="-I$SILK_DIR/interface -I$SILK_DIR/src -I$OPUS_DIR/include -I$G729_DIR/include -I$BOOST_DIR"
+    else
+        ./configure --prefix=/usr CXX=g++ \
         LDFLAGS="-Wl,-rpath=/usr/lib,-L$SILK_DIR -L$OPUS_DIR/.libs -L$(readlink -f ../orkbasecxx/.libs) -L$G729_DIR/src" \
         CPPFLAGS="-I$SILK_DIR/interface -I$SILK_DIR/src -I$OPUS_DIR/include -I$G729_DIR/include"
+    fi
     make clean
     make -j4
     $SUDO make DESTDIR=$DESTDIR install

@@ -83,7 +83,7 @@ make-package() {
             --maintainer 'Jose Rodriguez Bacallao <jrodriguez@interactivetel.com>' \
             --description 'VoIP Call Recording Platform' \
             --url 'https://interactivetel.com/totaltrack' --category 'Applications/Communications' \
-            -d apr-devel -d libpcap-devel -d boost-devel -d xerces-c-devel -d libsndfile-devel \
+            -d apr-devel -d libpcap-devel -d xerces-c-devel -d libsndfile-devel \
             -d speex-devel -d libogg-devel -d openssl-devel -d log4cxx-devel -d libcap-devel \
             --after-install "./dist/after-install.sh" \
             --before-remove "./dist/before-remove.sh" \
