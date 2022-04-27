@@ -3,6 +3,7 @@
 > - Copyright (C) 2005, Orecx LLC: http://www.orecx.com
 > - Modified and Distributed by: InterActiveTel LLC: http://interactivetel.com
 > - Forked from: https://github.com/OrecX/Oreka
+> - Another Interesting Fork: https://github.com/voiceip/oreka
 
 
 ## Directory Structure
@@ -46,3 +47,16 @@ This directory contains the scripts to build ***OrkAudio*** from source and crea
 - **G729**: <https://github.com/BelledonneCommunications/bcg729>
 
 Also, a copy of the working version of these libraries are at [**_Interactivetel Repository_**](https://packages.interactivetel.com). The installer will pull them from here.
+
+## Additional Documentation
+
+### OrecX
+https://files.orecx.com/docs/
+
+### Packet Encapsulation:
+- <https://github.com/fmadio/pcap_decap>
+- <https://github.com/thefloweringash/tzsp2pcap>
+- <https://github.com/rs/tzsp>
+- <https://web.archive.org/web/20050404125022/http://www.networkchemistry.com/support/appnotes/an001_tzsp.html>
+- <https://ccie-or-null.net/tag/vntag/>
+- <https://learnduty.com/articles/vn-tag-explained-configuration/>
