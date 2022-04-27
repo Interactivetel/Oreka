@@ -114,7 +114,7 @@ void G729CodecDecoder::AudioChunkOut(AudioChunkRef& chunk)
 
 AudioEncodingEnum G729CodecDecoder::GetInputAudioEncoding()
 {
-    return UnknownAudio;
+    return G729Audio;
 }
 
 AudioEncodingEnum G729CodecDecoder::GetOutputAudioEncoding()
@@ -129,7 +129,7 @@ CStdString G729CodecDecoder::GetName()
 
 bool G729CodecDecoder::SupportsInputRtpPayloadType(int rtpPayloadType)
 {
-    return rtpPayloadType == 18;
+    return rtpPayloadType == pt_G729;
 }
 
 void G729CodecDecoder::CaptureEventIn(CaptureEventRef& event)

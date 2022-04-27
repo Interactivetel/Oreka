@@ -36,7 +36,8 @@ typedef enum
 	OpusAudio = 9,
 	AmrNb = 10,
 	AmrWb = 11,
-	InvalidAudio = 12
+	G729Audio = 12,
+	InvalidAudio = 13
 } AudioEncodingEnum;
 
 /** 
@@ -258,6 +259,3 @@ CStdString DLL_IMPORT_EXPORT_ORKBASE FileFormatToString(int formatEnum);
 CStdString DLL_IMPORT_EXPORT_ORKBASE FileFormatGetExtension(FileFormatEnum);
 
 #endif
-
-
-
