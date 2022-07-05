@@ -44,14 +44,6 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  config.vm.define "debian10" do |debian10|
-    debian10.vm.box = "generic/debian10"
-    debian10.vm.hostname = "Debian10"
-    debian10.vm.provider "virtualbox" do |vb|
-      vb.name = debian10.vm.hostname + "-OrkAudio"
-    end
-  end
-
   config.vm.define "debian11" do |debian11|
     debian11.vm.box = "generic/debian11"
     debian11.vm.hostname = "Debian11"
