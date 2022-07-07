@@ -27,7 +27,7 @@
     <!-- For a TLS connection to orktrack, the remote target should be      -->
     <!-- prefixed with "https://"                                           -->
     <!-- For example, https://localhost                                     -->
-    <EnableReporting>no</EnableReporting>
+    <EnableReporting>false</EnableReporting>
     <TrackerHostname></TrackerHostname>
     <TrackerTcpPort></TrackerTcpPort>
     <!-- The default TlsClientCACertFile points to the self-signed          -->
@@ -55,7 +55,7 @@
     <AudioFileOwner>root</AudioFileOwner>
     <AudioFileGroup>root</AudioFileGroup>
     <AudioFilePermissions>644</AudioFilePermissions>
-    <!--<TapeDurationMinimumSec>3</TapeDurationMinimumSec>-->
+    <TapeDurationMinimumSec>2</TapeDurationMinimumSec>
 
     <!-- Uncomment the parameter below and fill in a comma-separated -->
     <!-- list of TCP addresses which you wish to open a connection to. -->
@@ -82,6 +82,7 @@
 
     <VoIpPlugin>
         <PcapSocketBufferSize>67108864</PcapSocketBufferSize>
+        <IpFragmentsReassemble>true</IpFragmentsReassemble>
 
         <!--queuemetrics integration, uncomment the following line-->
         <SipExtractFields>X-Unique-ID,Remote-Party-ID,From,To,P-Asserted-Identity</SipExtractFields>
