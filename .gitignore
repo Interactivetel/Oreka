@@ -183,17 +183,12 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/c++,autotools,cmake,osx,linux,windows
 
 ### Custom ###
-
+.build/
+.idea/
+.vagrant/
 orkaudio/orkaudio
 orkaudio/audiocaptureplugins/*/AudioCapturePluginCommon.cpp
 !orkaudio/audiocaptureplugins/common/*
 -.s
-
-# IntelliJ and VSCode
-.idea/
-
-# IAT
-.vagrant
 interactivetel/packages
 !config*.xml
-!Config.h
