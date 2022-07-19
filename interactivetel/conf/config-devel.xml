@@ -52,8 +52,8 @@
 
     <BatchProcessingEnhancePriority>true</BatchProcessingEnhancePriority>
 
-    <AudioFileOwner>root</AudioFileOwner>
-    <AudioFileGroup>root</AudioFileGroup>
+    <AudioFileOwner>_USER_</AudioFileOwner>
+    <AudioFileGroup>_USER_</AudioFileGroup>
     <AudioFilePermissions>644</AudioFilePermissions>
     <TapeDurationMinimumSec>2</TapeDurationMinimumSec>
 
@@ -119,6 +119,9 @@
         <SipNotifySupport>yes</SipNotifySupport>
         <SipPickUpSupport>yes</SipPickUpSupport>
         <!--<SipMetadataUseLastInvite>yes</SipMetadataUseLastInvite>-->
+        
+        <!-- Enable this on o pon if the PBX is behind a NAT and handsets register against it from outside -->
+        <!--<SipTrackMediaAddressOnSender>yes</SipTrackMediaAddressOnSender>-->
 
         <!-- Those two parameters are only needed for call direction detection (one or the other) -->
         <!--<SipDomains>company.com, 65.34.25.87</SipDomains>-->
