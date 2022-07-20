@@ -123,7 +123,7 @@
         <SipPickUpSupport>yes</SipPickUpSupport>
         <!--<SipMetadataUseLastInvite>yes</SipMetadataUseLastInvite>-->
         
-        <!-- Enable this on o pon if the PBX is behind a NAT and handsets register against it from outside -->
+        <!-- Enable this if the PBX is behind a NAT and handsets register against it from outside -->
         <!--<SipTrackMediaAddressOnSender>yes</SipTrackMediaAddressOnSender>-->
 
         <!-- Those two parameters are only needed for call direction detection (one or the other) -->
