@@ -18,8 +18,8 @@ Vagrant.configure("2") do |config|
   config.vbguest.auto_update = false
   config.vm.provider "virtualbox" do |vb, override|
     vb.gui = false
-    vb.cpus = 2
-    vb.memory = 2048
+    vb.cpus = 4
+    vb.memory = 4096
     vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
   
     # network configuration (use the default network interface in the host for the bridge)

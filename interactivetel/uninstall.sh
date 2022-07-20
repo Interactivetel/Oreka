@@ -1,72 +1,46 @@
 #!/usr/bin/env bash
 set -eE
 
-cd "$(dirname "$0")" 
+cd "$(dirname "$0")"
 
 . lib.sh
 
-
-if [[ ! $EUID -eq 0 ]]; then
-    abort "::: Must be root to run this script"
-fi
-
-# detect the linux distribution
-system-detect
-if [[ "$BASE_DIST" == "redhat" ]]; then
-    PKG_MANAGER="yum"
-    CHECK_CMD="rpm -q"
-elif [[ "$BASE_DIST" == "debian" ]]; then
-    PKG_MANAGER="apt-get"
-    CHECK_CMD="dpkg -l"
-else
-    abort "::: Unsupported distribution: $DIST"
-fi
-
-info "::: Uninstalling OrkAudio ... \n"
+header "Uninstalling OrkAudio"
 
 # backup old config
-if [ -d /etc/orkaudio ]; then
-    info "::: Backing up old configuration to: ~"
-    tar -C /etc/orkaudio/ -czvpf ~/orkaudio-config-$(date +%Y%m%d-%H%M%S).tar.gz .
+test -d /etc/orkaudio && {
+  BACKUP=$HOME/orkaudio-config-$(date +%Y%m%d-%H%M%S).tar.gz
+  info "Backing up old configuration to: $BACKUP"
+  tar -C /etc/orkaudio/ -czpf $BACKUP .
+}
+
+# remove all orkaudio packages and dependencies
+system-detect
+if command -v yum &>/dev/null; then
+  sudo yum -y remove apr-devel libpcap-devel xerces-c-devel libsndfile-devel speex-devel libogg-devel openssl-devel log4cxx log4cxx-devel libcap-devel
+  for PKG in orkspeex orkbase orkbasecxx orkaudio; do
+    rpm -q "$PKG" && sudo yum -y remove "$PKG"
+  done
+elif command -v apt-get &>/dev/null; then
+  sudo apt-get -y purge libapr1-dev libpcap-dev libboost-all-dev libxerces-c-dev libsndfile1-dev libspeex-dev libopus-dev libssl-dev liblog4cxx-dev libcap-dev libbcg729-dev
+  for PKG in orkspeex orkbase orkbasecxx orkaudio; do
+    dpkg -l "$PKG" && sudo apt-get -y purge "$PKG"
+  done
+  sudo apt-get -y autoremove
 fi
 
+# remove any remaining file just in case
+sudo rm -rf /usr/include/bcg729 /usr/lib/pkgconfig/libbcg729.pc /usr/lib/libbcg729.* /usr/lib64/libbcg729.* /usr/lib/libgenerator.* /usr/lib/liborkbase.* \
+  /usr/lib/libvoip.* /usr/lib64/pkgconfig/libbcg729.pc /usr/lib/x86_64-linux-gnu/libbcg729.* /usr/lib/x86_64-linux-gnu/pkgconfig/libbcg729.pc \
+  /usr/lib/orkaudio /usr/share/Bcg729 /usr/sbin/orkaudio /etc/orkaudio /var/log/orkaudio
 
-# uninstall any package
-PKGS="orkspeex orkbase orkbasecxx orkaudio"
-for PKG in $PKGS; do
-    if ${CHECK_CMD} "$PKG"; then
-        ${PKG_MANAGER} -y remove "$PKG"
-    fi
-done
-
-if [[ "$PKG_MANAGER" = "apt-get" ]]; then
-    ${PKG_MANAGER} -y autoremove
+# disable boot service if any, including supervisor
+test -f /etc/supervisor/conf-available/orkaudio.conf && sudo rm -f /etc/supervisor/conf-available/orkaudio.conf
+test -f /etc/supervisor/conf.d/orkaudio.conf && sudo rm -f /etc/supervisor/conf.d/orkaudio.conf
+if command -v chkconfig &>/dev/null && chkconfig orkaudio; then
+  sudo chkconfig orkaudio off
+  sudo chkconfig --del orkaudio
+  test -f /etc/init.d/orkaudio && sudo rm -f /etc/init.d/orkaudio
 fi
 
-
-rm -rf /usr/include/bcg729
-rm -rf /usr/lib/pkgconfig/libbcg729.pc
-rm -rf /usr/lib/libbcg729.*
-rm -rf /usr/lib64/libbcg729.*
-rm -rf /usr/lib/libgenerator.*
-rm -rf /usr/lib/liborkbase.*
-rm -rf /usr/lib/libvoip.*
-rm -rf /usr/lib64/libbcg729.*
-rm -rf /usr/lib64/pkgconfig/libbcg729.pc
-rm -rf /usr/lib/x86_64-linux-gnu/libbcg729.*
-rm -rf /usr/lib/x86_64-linux-gnu/pkgconfig/libbcg729.pc
-rm -rf /usr/lib/orkaudio
-rm -rf /usr/share/Bcg729
-rm -rf /usr/sbin/orkaudio
-rm -rf /etc/orkaudio
-rm -rf /var/log/orkaudio
-
-if command -v chkconfig &> /dev/null && chkconfig orkaudio; then
-    chkconfig orkaudio off
-    chkconfig --del orkaudio
-    test -f /etc/init.d/orkaudio && rm -f /etc/init.d/orkaudio
-fi
-
-test -f /etc/supervisor/conf.d/orkaudio.conf && rm -f /etc/supervisor/conf.d/orkaudio.conf
-
-info "::: Finished!\n"
+info "\nFinished!\n"

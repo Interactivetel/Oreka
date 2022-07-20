@@ -13,9 +13,12 @@ usage() {
     info ":::   Debian, Ubuntu, CentOS and RedHat."
     info ":::"
     info "::: Usage:"
-    info ":::   make-pkg.sh [ -h | --help ]"
+    info ":::   make-pkg.sh [ -h | --help ] <release|debug>"
     info ":::"
     info ":::   -h | --help: Show this message"
+    info ":::   release: Creates the release (production ready) version of the package"
+    info ":::   debug: Creates the debug version of the package"
+    info ":::"
     info ":::   The script will automatically detect you linux distro and create the package (rpm|deb) accordingly"
     info ":::"
     info "::: Ej:"
@@ -24,9 +27,7 @@ usage() {
 }
 
 make-package() {
-    # detect the running we are running on
     system-detect
-
     if [[ "$OS" != "linux" ]]; then
       abort "Unsupported operating system: $OS, we only support linux"
     fi
@@ -57,32 +58,38 @@ make-package() {
 
     # check we defined proper version numbers
     source ./version.txt
-    test -z "$VERSION" && abort "Invalid version number, check version.txt for the VERSION variable"
-    test -z "$ITER" && abort "Invalid iteration number, check version.txt for the ITER variable"
-    test -z "$DIST" && abort "Cannot detect distribution name"
-    test -z "$VER" && abort "Cannot detect distribution version"
-
-
+    test -z "$VERSION" && VERSION=1.0
+    test -z "$ITER" && ITER=0
+    
     # install orkaudio
-    VM="$DIST-$VER"
-    header "Installing OrkAudio at $(readlink -f ./packages/$VM)"
-    rm -rf "./packages/$VM"
-    ./install.sh $(readlink -f "./packages/$VM")
+    INSTALL_DIR=$(mktemp -d -t orkaudio.XXX)
+    trap 'rm -rf "${INSTALL_DIR}"' EXIT
+
+    if [[ "$DEBUG" = true ]]; then
+        NAME=orkaudio-dbg
+        CONFLICTS=orkaudio
+        ./install.sh -d "$INSTALL_DIR" debug
+    else
+        NAME=orkaudio
+        CONFLICTS=orkaudio-dbg
+        ./install.sh -d "$INSTALL_DIR" release
+    fi
 
     # remove static libs
-    find "./packages/$VM" -name "*.la" -type f -exec rm {} +
-    find "./packages/$VM" -name "*.a" -type f -exec rm {} +
+    find "$INSTALL_DIR" -name "*.la" -type f -exec rm {} +
+    find "$INSTALL_DIR" -name "*.a" -type f -exec rm {} +
 
     # finally make the package with FPM
     if [[ "$BASE_DIST" == "redhat" ]]; then
         TAG=$(echo $VER | cut -d '.' -f 1)
         fpm \
-            -s dir -t rpm --force --package "./packages/$VM" --chdir "./packages/$VM" \
-            --name orkaudio --version "$VERSION" --iteration "$ITER" \
+            -s dir -t rpm --force --chdir "$INSTALL_DIR" \
+            --name "$NAME" --version "$VERSION" --iteration "$ITER" \
             --license "IAT" --vendor "InteractiveTel" \
             --maintainer 'Jose Rodriguez Bacallao <jrodriguez@interactivetel.com>' \
             --description 'VoIP Call Recording Platform' \
             --url 'https://interactivetel.com/totaltrack' --category 'Applications/Communications' \
+            --conflicts "$CONFLICTS" --provides "orkaudio" \
             -d apr-devel -d libpcap-devel -d xerces-c-devel -d libsndfile-devel \
             -d speex-devel -d libogg-devel -d openssl-devel -d log4cxx-devel -d libcap-devel \
             --after-install "./dist/after-install.sh" \
@@ -91,8 +98,7 @@ make-package() {
             --rpm-compression xz --rpm-dist "el$TAG" \
             --config-files /etc/orkaudio \
             --directories /usr/lib/orkaudio --directories /var/log/orkaudio \
-            --directories /etc/orkaudio --directories /usr/share/Bcg729 --directories /usr/include/bcg729 \
-            etc/orkaudio usr/ var/log/orkaudio
+            --directories /etc/orkaudio --directories /usr/share/Bcg729 --directories /usr/include/bcg729
     elif [[ "$BASE_DIST" == "debian" ]]; then
         EXTRA_DIRS=""
         if [[ "$DIST" == "debian" && "$VER" -lt 11 ]]; then
@@ -100,35 +106,43 @@ make-package() {
         fi
 
         fpm \
-            -s dir -t deb --force --package "./packages/$VM" --chdir "./packages/$VM" \
-            --name orkaudio --version "$VERSION" --iteration "$ITER" \
+            -s dir -t deb --force --chdir "$INSTALL_DIR" \
+            --name "$NAME" --version "$VERSION" --iteration "$ITER~$DIST$VER" \
             --license "IAT" --vendor "InteractiveTel" \
             --maintainer 'Jose Rodriguez Bacallao <jrodriguez@interactivetel.com>' \
             --description 'VoIP Call Recording Platform' \
             --url 'https://interactivetel.com/totaltrack' --category 'comm' \
+            --conflicts "$CONFLICTS" --provides "orkaudio" \
             -d libapr1-dev -d libpcap-dev -d libboost-all-dev -d libxerces-c-dev -d libsndfile1-dev \
             -d libspeex-dev -d libopus-dev  -d libssl-dev -d liblog4cxx-dev -d libcap-dev \
             --after-install "./dist/after-install.sh" \
             --before-remove "./dist/before-remove.sh" \
             --after-upgrade "./dist/after-upgrade.sh" \
-            --deb-recommends "orkaudio" \
             --deb-compression xz --deb-dist stable \
             --config-files /etc/orkaudio \
-            --directories /usr/lib/orkaudio --directories /var/log/orkaudio \
-            --directories /etc/orkaudio $EXTRA_DIRS \
-            etc/orkaudio usr/ var/log/orkaudio
+            --directories /usr/lib/orkaudio --directories /var/log/orkaudio $EXTRA_DIRS
     else
         abort "Unsupported linux distribution: $BASE_DIST/$DIST-$VER"
     fi
     
 }
 
+
+DEBUG=false
 if [[ $# -eq 0 ]]; then
-    make-package
+    usage
 elif [[ $# -eq 1 ]]; then
     if [[ "$1" = "-h" || "$1" = "--help" ]]; then
         usage
+    elif [[ $1 = "debug" ]]; then
+        DEBUG=true
+        make-package
+    elif [[ $1 = "release" ]]; then
+        DEBUG=false
+        make-package
+    else
+        abort "$(basename $0): Invalid mode: '$1', it most be one of: [release, debug]"
     fi
 else
-    abort "Invalid options, check the help: $*"
+    abort "$(basename $0): Invalid options, check the help: $*"
 fi
