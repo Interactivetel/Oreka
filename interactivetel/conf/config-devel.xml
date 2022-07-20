@@ -124,7 +124,7 @@
         <!--<SipMetadataUseLastInvite>yes</SipMetadataUseLastInvite>-->
         
         <!-- Enable this if the PBX is behind a NAT and handsets register against it from outside -->
-        <!--<SipTrackMediaAddressOnSender>yes</SipTrackMediaAddressOnSender>-->
+        <SipTrackMediaAddressOnSender>yes</SipTrackMediaAddressOnSender>
 
         <!-- Those two parameters are only needed for call direction detection (one or the other) -->
         <!--<SipDomains>company.com, 65.34.25.87</SipDomains>-->
