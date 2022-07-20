@@ -16,7 +16,7 @@
 
     <CapturePluginPath>/usr/lib</CapturePluginPath>
 
-    <!-- Audio file storage format: choose from: native, gsm, ulaw, alaw, pcmwav -->
+    <!-- Audio file storage format: choose from: native, gsm, ulaw, alaw, pcmwav, opus -->
     <StorageAudioFormat>pcmwav</StorageAudioFormat>
     <StereoRecording>true</StereoRecording>
     <TapeNumChannels>2</TapeNumChannels>
@@ -50,6 +50,9 @@
     <CapturePortFilters></CapturePortFilters>
     <TapeProcessors>BatchProcessing, Reporting</TapeProcessors>
 
+    <!-- <ImmediateProcessingQueueSize>50000</ImmediateProcessingQueueSize> -->
+    <!-- <BatchProcessingQueueSize>2000</BatchProcessingQueueSize> -->
+    <!-- <NumBatchThreads>6</NumBatchThreads> -->
     <BatchProcessingEnhancePriority>true</BatchProcessingEnhancePriority>
 
     <AudioFileOwner>root</AudioFileOwner>
