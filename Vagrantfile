@@ -35,38 +35,21 @@ Vagrant.configure("2") do |config|
   end
   
 
-  # three development boxes: CentOS 6, Debian 10 and Debian 11
   config.vm.define "centos6", primary: true do |centos6|
     centos6.vm.box = "generic/centos6"
-    centos6.vm.hostname = "CentOS6"
+    centos6.vm.hostname = "CentOS6-OrkAudio"
     centos6.vm.provider "virtualbox" do |vb|
-      vb.name = centos6.vm.hostname + "-OrkAudio"
+      vb.name = centos6.vm.hostname
     end
   end
 
   config.vm.define "debian11" do |debian11|
     debian11.vm.box = "generic/debian11"
-    debian11.vm.hostname = "Debian11"
+    debian11.vm.hostname = "Debian11-OrkAudio"
     debian11.vm.provider "virtualbox" do |vb|
-      vb.name = debian11.vm.hostname + "-OrkAudio"
+      vb.name = debian11.vm.hostname
     end
   end
 
   config.vm.synced_folder ".", "/home/vagrant/Oreka", type: "virtualbox"
-  config.vm.provision "shell", privileged: false, inline: <<-'SCRIPT'
-    #!/usr/bin/env bash
-    set -e
-
-    if command -v apt-get &> /dev/null; then
-      sudo apt-get -y update
-      sudo apt-get -y upgrade
-      sudo apt-get -y install git curl wget mc htop bash-completion sudo net-tools dnsutils psmisc
-    elif command -v yum &> /dev/null; then
-      sudo yum -y update
-      sudo yum -y install git curl wget mc htop bash-completion sudo net-tools bind-utils gpg
-    fi
-
-    git clone http://github.com/jmrbcu/dotfiles.git ~/.dotfiles
-    ~/.dotfiles/install.sh all
-  SCRIPT
 end
