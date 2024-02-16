@@ -183,7 +183,9 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/c++,autotools,cmake,osx,linux,windows
 
 ### Custom ###
-.build-*/
+.build/
+.debug/
+.release/
 .idea/
 .vagrant/
 orkaudio/orkaudio
