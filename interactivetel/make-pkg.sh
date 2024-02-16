@@ -26,56 +26,46 @@ usage() {
     info ":::"
 }
 
-make-package() {
+
+install_fpm() {
+    command -v fpm &>/dev/null && return
+
+    header "Installing FPM ..."
     system-detect
-    if [[ "$OS" != "linux" ]]; then
-      abort "Unsupported operating system: $OS, we only support linux"
+    if [[ "$BASE_DIST" = "debian" ]]; then
+        sudo apt-get -y install ruby 
+        sudo gem install fpm
+    elif [[ "$BASE_DIST" = "redhat" ]]; then
+        fix-centos6-repos
+        command -v rvm || {
+            command curl -sSL https://rvm.io/mpapis.asc | gpg2 --import -
+            command curl -sSL https://rvm.io/pkuczynski.asc | gpg2 --import -
+            curl -sSL https://get.rvm.io | bash -s stable
+        }
+
+        source ~/.rvm/scripts/rvm
+        command -v ruby || rvm install ruby
+        gem install fpm
+    else
+        abort "Could not found command: fpm, please, install it first"
     fi
+}
 
-    # check for FPM command and install it if not found
-    command -v fpm &>/dev/null || {
-        header "Installing FPM ..."
-        if [[ "$BASE_DIST" = "debian" ]]; then
-            sudo apt-get -y install ruby 
-            sudo gem install fpm
-        elif [[ "$BASE_DIST" = "redhat" ]]; then
-            # fix centos 6 repositories (EOL)
-            fix-centos6-repos
-            
-            command -v rvm || {
-                command curl -sSL https://rvm.io/mpapis.asc | gpg2 --import -
-                command curl -sSL https://rvm.io/pkuczynski.asc | gpg2 --import -
-                curl -sSL https://get.rvm.io | bash -s stable
-            }
-
-            source ~/.rvm/scripts/rvm
-            command -v ruby || rvm install ruby
-            command -v fpm || gem install fpm
-        else
-            abort "Could not found command: fpm, please, install it first"
-        fi
-    }
+make-package() {
+    # install fpm first
+    install_fpm
 
     # check we defined proper version numbers
     source ./version.txt
     test -z "$VERSION" && VERSION=1.0
     test -z "$ITER" && ITER=0
     
-    # install orkaudio
+    # install orkaudio in release mode
     INSTALL_DIR=$(mktemp -d -t orkaudio.XXX)
-    trap 'rm -rf "${INSTALL_DIR}"' EXIT
+    # trap 'rm -rf "${INSTALL_DIR}"' EXIT
+    DESTDIR="$INSTALL_DIR" ./install.sh rel
 
-    if [[ "$DEBUG" = true ]]; then
-        NAME=orkaudio-dbg
-        CONFLICTS=orkaudio
-        ./install.sh -d "$INSTALL_DIR" debug
-    else
-        NAME=orkaudio
-        CONFLICTS=orkaudio-dbg
-        ./install.sh -d "$INSTALL_DIR" release
-    fi
-
-    # remove static libs
+    # remove static libs and libtools artifacts
     find "$INSTALL_DIR" -name "*.la" -type f -exec rm {} +
     find "$INSTALL_DIR" -name "*.a" -type f -exec rm {} +
 
@@ -84,12 +74,11 @@ make-package() {
         TAG=$(echo $VER | cut -d '.' -f 1)
         fpm \
             -s dir -t rpm --force --chdir "$INSTALL_DIR" \
-            --name "$NAME" --version "$VERSION" --iteration "$ITER" \
+            --name orkaudio --version "$VERSION" --iteration "$ITER" \
             --license "IAT" --vendor "InteractiveTel" \
             --maintainer 'Jose Rodriguez Bacallao <jrodriguez@interactivetel.com>' \
             --description 'VoIP Call Recording Platform' \
-            --url 'https://interactivetel.com/totaltrack' --category 'Applications/Communications' \
-            --conflicts "$CONFLICTS" --provides "orkaudio" \
+            --url 'https://interactivetel.com/totaltrack' --category 'Applications/Communications' --provides "orkaudio" \
             -d apr-devel -d libpcap-devel -d xerces-c-devel -d libsndfile-devel \
             -d speex-devel -d libogg-devel -d openssl-devel -d log4cxx-devel -d libcap-devel \
             --after-install "./dist/after-install.sh" \
@@ -107,12 +96,11 @@ make-package() {
 
         fpm \
             -s dir -t deb --force --chdir "$INSTALL_DIR" \
-            --name "$NAME" --version "$VERSION" --iteration "$ITER~$DIST$VER" \
+            --name orkaudio --version "$VERSION" --iteration "$ITER~$DIST$VER" \
             --license "IAT" --vendor "InteractiveTel" \
             --maintainer 'Jose Rodriguez Bacallao <jrodriguez@interactivetel.com>' \
             --description 'VoIP Call Recording Platform' \
-            --url 'https://interactivetel.com/totaltrack' --category 'comm' \
-            --conflicts "$CONFLICTS" --provides "orkaudio" \
+            --url 'https://interactivetel.com/totaltrack' --category 'comm' --provides "orkaudio" \
             -d libapr1-dev -d libpcap-dev -d libboost-all-dev -d libxerces-c-dev -d libsndfile1-dev \
             -d libspeex-dev -d libopus-dev  -d libssl-dev -d liblog4cxx-dev -d libcap-dev \
             --after-install "./dist/after-install.sh" \
@@ -128,21 +116,10 @@ make-package() {
 }
 
 
-DEBUG=false
 if [[ $# -eq 0 ]]; then
+    make-package
+elif [[ $# -eq 1 && "$1" = "-h" || "$1" = "--help" ]]; then
     usage
-elif [[ $# -eq 1 ]]; then
-    if [[ "$1" = "-h" || "$1" = "--help" ]]; then
-        usage
-    elif [[ $1 = "debug" ]]; then
-        DEBUG=true
-        make-package
-    elif [[ $1 = "release" ]]; then
-        DEBUG=false
-        make-package
-    else
-        abort "$(basename $0): Invalid mode: '$1', it most be one of: [release, debug]"
-    fi
 else
-    abort "$(basename $0): Invalid options, check the help: $*"
+    abort "$(basename $0): Invalid options, run: $(basename $0) -h | --help"
 fi

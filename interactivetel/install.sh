@@ -5,6 +5,37 @@ cd "$(dirname "$0")"
 
 . lib.sh
 
+system-detect
+
+
+DESTDIR=${DESTDIR:-}
+PREFIX=${PREFIX:-/usr}
+DEBUG=${DEBUG:-false}
+
+BUILD_DIR=$(readlink -f ../.build)
+
+OPUS_LIB=opus-1.4
+OPUS_DIR="$BUILD_DIR/$OPUS_LIB"
+
+SILK_LIB=silk-1.0.9
+SILK_DIR="$BUILD_DIR/$SILK_LIB"
+SILK_SRC="$SILK_DIR/SILK_SDK_SRC_FIX"
+
+G729_LIB=bcg729-1.1.1
+G729_DIR="$BUILD_DIR/$G729_LIB"
+
+BOOST_LIB=boost_1_84_0
+BOOST_DIR="$BUILD_DIR/$BOOST_LIB"
+
+CMAKE=cmake
+if [[ "$BASE_DIST" == "redhat" ]]; then
+  CMAKE=cmake3
+fi
+
+SUDO=
+if [[ -n "$A" && -w "$(dirname "$A")" ]]; then
+  SUDO=sudo
+fi
 
 usage() {
   info "::: Description:"
@@ -14,13 +45,19 @@ usage() {
   info ":::   Debian, Ubuntu, CentOS and RedHat."
   info ":::"
   info "::: Usage:"
-  info ":::   $(basename $0) [ -h | -d <DESTDIR> ] [release | debug | dev]"
+  info ":::   $(basename $0) <bin-deps | src-deps | clean | configure | install | rel | dev>"
   info ":::"
-  info ":::   -h: Show this message"
-  info ":::   -d: install under this directory: DESTDIR"
-  info ":::   release: install in release mode (optimizations on)"
-  info ":::   debug: install in debug mode (optimizations off, debugging info on)"
-  info ":::   dev: boostrap for develpment mode"
+  info ":::   bin-deps: Install binary dependencies"
+  info ":::   src-deps: Compile and install source dependencies"
+  info ":::   clean: Clean the project"
+  info ":::   configure: Run the configure step"
+  info ":::   install: Build and install OrkAudio along with its configuration files"
+  info ":::   rel: Build and install a release version of OrkAudio"
+  info ":::   dev: Build and install a development (DEBUG ON) version of OrkAudio to: PROJECT_ROOT/.debug"
+  info ":::"
+  info "::: Enviroment Variables:"
+  info ":::   DEBUG: Enables debug builds: true | false"
+  info ":::   DESTDIR: Perform and staged install at this location"
   info ":::"
 }
 
@@ -51,11 +88,14 @@ install_binary_deps() {
     sudo apt-get -y upgrade
 
     # install development tools
-    sudo apt-get -y install git curl wget mc htop libtool libtool-bin cmake sngrep net-tools dnsutils build-essential
+    sudo apt-get -y install git curl wget mc htop libtool libtool-bin cmake sngrep net-tools dnsutils build-essential systemd-timesyncd
 
     # orkaudio dependencies, log4cxx and log4cxx-devel: v0.10.0
     sudo apt-get -y install libapr1-dev libpcap-dev libboost-all-dev libxerces-c-dev libsndfile1-dev \
       libspeex-dev libopus-dev libssl-dev liblog4cxx-dev libcap-dev
+
+    # enable ntp service
+    sudo systemctl enable --now systemd-timesyncd.service
 
     if [[ "$DIST" = "debian" && "$VER" -ge 11 ]]; then
       sudo apt-get -y install libbcg729-dev
@@ -68,207 +108,192 @@ install_binary_deps() {
 }
 
 install_source_deps() {
+  mkdir -p "$BUILD_DIR"
+
   # build opus codec
-  header "::: Building Opus lib"
-  wget --no-check-certificate -P "$BUILD_DIR" https://packages.interactivetel.com/libs/opus-1.3.1.tar.gz
-  tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$OPUS_LIB.tar.gz"
+  header "Building Opus lib: $OPUS_DIR"
+  rm -rf "$OPUS_DIR"
+  wget https://github.com/Interactivetel/opus/archive/refs/tags/v1.4.tar.gz -O "$BUILD_DIR/$OPUS_LIB.tar.gz"
+  tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$OPUS_LIB.tar.gz" && rm -f "$BUILD_DIR/$OPUS_LIB.tar.gz"
 
   pushd "$OPUS_DIR" &>/dev/null
-  ./configure --enable-shared=no --enable-static --with-pic
-  make clean
+  ./autogen.sh
+  ./configure --enable-shared=yes --enable-static --with-pic
   make -j
   ln -sf "$OPUS_DIR/.libs/libopus.a" "$OPUS_DIR/.libs/libopusstatic.a"
   popd &>/dev/null
-
   printf "\n\n"
 
   # build silk codec
-  header "Building Silk lib ..."
-  wget --no-check-certificate -P "$BUILD_DIR" https://packages.interactivetel.com/libs/silk.tgz
-  tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$SILK_LIB".tgz
+  header "Building Silk lib: $SILK_SRC"
+  rm -rf "$SILK_DIR"
+  git clone --depth 1 https://github.com/Interactivetel/SILKCodec "$SILK_DIR"
 
-  pushd "$SILK_DIR" &>/dev/null
-  make clean
-  CFLAGS="-fPIC" make -j lib
+  pushd "$SILK_SRC" &>/dev/null
+  CFLAGS="-fPIC" make -j clean lib
   popd &>/dev/null
 
   printf "\n\n"
 
+  # boost
   if [[ "$BASE_DIST" = "redhat" ]]; then
-    # boost
     header "Installing boost library at: $BOOST_DIR"
-    wget --no-check-certificate -P "$BUILD_DIR" https://packages.interactivetel.com/libs/boost_1_79_0.tar.gz
+    wget "https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/$BOOST_LIB.tar.gz" -O "$BUILD_DIR/$BOOST_LIB.tar.gz"
     tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$BOOST_LIB.tar.gz"
+    printf "\n\n"
   fi
 
   # build G729 codec for all dist except debian 11 and up
-  if [[ "$DIST" = "debian" && "$VER" -ge 11 ]]; then
-    return
-  fi
+  if [[ "$BASE_DIST" = "redhat" || "$DIST" = "debian" && "$VER" -le 10 ]]; then
+    header "Builing G729 lib: $G729_DIR"
+    rm -rf "$G729_DIR"
+    wget https://github.com/Interactivetel/bcg729/archive/refs/tags/1.1.1.tar.gz -O "$BUILD_DIR/$G729_LIB.tar.gz"
+    tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$G729_LIB.tar.gz" && rm -f "$BUILD_DIR/$G729_LIB.tar.gz"
 
-  header "Installing G729 lib"
-  wget --no-check-certificate -P "$BUILD_DIR" https://packages.interactivetel.com/libs/bcg729-1.1.1.tar.gz
-  tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$G729_LIB.tar.gz"
-
-  pushd "$G729_DIR" &>/dev/null
-  if [[ "$BASE_DIST" == "redhat" ]]; then
-    cmake3 . -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_SHARED=YES -DENABLE_STATIC=NO -DCMAKE_SKIP_INSTALL_RPATH=ON
-  else
-    cmake . -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_SHARED=YES -DENABLE_STATIC=NO -DCMAKE_SKIP_INSTALL_RPATH=ON
-  fi
-  make clean
-  make -j
-
-  if [[ "$DEVEL" = false ]]; then
+    pushd "$G729_DIR" &>/dev/null
+    $CMAKE . -DCMAKE_INSTALL_PREFIX="$PREFIX" -DENABLE_SHARED=YES -DENABLE_STATIC=YES -DCMAKE_SKIP_INSTALL_RPATH=ON
+    make -j
     $SUDO make DESTDIR=$DESTDIR install
+    popd &>/dev/null
   fi
-  popd &>/dev/null
 
   printf "\n\n"
 }
 
-install_orkaudio() {
-  CPPFLAGS="-DXERCES_3 -I$OPUS_DIR/include -I$SILK_DIR/interface -I$SILK_DIR/src -I$OPUS_DIR/include -I$G729_DIR/include"
-  LDFLAGS="-Wl,-rpath=/usr/lib,-L$SILK_DIR -L$OPUS_DIR/.libs -L$(readlink -f ../orkbasecxx/.libs) -L$G729_DIR/src"
+configure() {
+  CPPFLAGS="-DXERCES_3"
+  CFLAGS="-I$OPUS_DIR/include -I$SILK_SRC/interface -I$SILK_SRC/src -I$G729_DIR/include"
+  CXXFLAGS="-I$OPUS_DIR/include -I$SILK_SRC/interface -I$SILK_SRC/src -I$G729_DIR/include"
+  LDFLAGS="-Wl,-rpath=/usr/lib,-L$SILK_SRC -L$OPUS_DIR/.libs -L$(readlink -f ../orkbasecxx/.libs) -L$G729_DIR/src"
+
   if [[ "$BASE_DIST" = "redhat" ]]; then
     CPPFLAGS="$CPPFLAGS -I$BOOST_DIR"
   fi
 
-  if [[ "$DEBUG" = true || "$DEVEL" = true ]]; then
-    CFLAGS="-DDEBUG -g3 -ggdb3 -Og $CFLAGS"
-    CXXFLAGS="-DDEBUG -g3 -ggdb3 -Og $CXXFLAGS"
-    CPPFLAGS="-DDEBUG -g3 -ggdb3 -Og $CPPFLAGS"
-  else
-    CFLAGS="-O2 $CFLAGS"
-    CXXFLAGS="-O2 $CXXFLAGS"
-    CPPFLAGS="-O2 $CPPFLAGS"
+  if [[ "$DEBUG" = true ]]; then
+    CPPFLAGS="-DDEBUG $CPPFLAGS"
+    CFLAGS="-g3 -ggdb3 -Og $CFLAGS"
+    CXXFLAGS="-g3 -ggdb3 -Og $CXXFLAGS"
   fi
 
-  for DIR in orkbasecxx orkaudio; do
-    if [[ "$DEVEL" == true ]]; then
-      header "Boostraping $DIR for DEVELOPMENT mode"
-    elif [[ "$DEBUG" == true ]]; then
-      header "Installing $DIR in DEBUG mode under: $DESTDIR"
-    else
-      header "Installing $DIR in RELEASE mode under: $DESTDIR"
-    fi
-
-    pushd "../$DIR" &>/dev/null
-    test -f Makefile && make distclean
+  for PROJECT in orkbasecxx orkaudio; do
+    pushd "../$PROJECT" &>/dev/null
+    header "Configuring: $PROJECT"
+    test -f Makefile && make distclean || :
     autoreconf -f -i
-    ./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS"
-    make -j
+    echo $CPPFLAGS
+    echo $CFLAGS
+    echo $CXXFLAGS
+    echo $LDFLAGS
 
-    # install if not in development mode
-    test "$DEVEL" = false &&  $SUDO make DESTDIR=$DESTDIR install
-    popd &>/dev/null
+    ./configure --prefix="$PREFIX" CPPFLAGS="$CPPFLAGS" CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS"
     printf "\n\n"
+    popd &>/dev/null
   done
 }
 
-install_conf() {
-  header "Installing configuration files and finishing installation"
+install() {
+  for PROJECT in orkbasecxx orkaudio; do
+    pushd "../$PROJECT" &>/dev/null
+    header "Building: $PROJECT"
+    make -j
+    printf "\n\n"
 
-  # copy all configuration files
+    header "Installing: $PROJECT"
+    $SUDO make DESTDIR=$DESTDIR install
+    printf "\n\n"
+    popd &>/dev/null
+  done
+
   $SUDO mkdir -p $DESTDIR/etc/orkaudio
   $SUDO mkdir -p $DESTDIR/var/log/orkaudio
-  $SUDO cp -f conf/* $DESTDIR/etc/orkaudio/
-
-  if [[ "$DEVEL" = true ]]; then
-    ORKAUDIO_DIR=$(readlink -f ../orkaudio)
-    $SUDO chown -R "$USER:$USER" "$DESTDIR/etc/orkaudio"
-    $SUDO chown -R "$USER:$USER" "$DESTDIR/var/log/orkaudio"
-    $SUDO mv "$DESTDIR/etc/orkaudio/config-devel.xml" "$DESTDIR/etc/orkaudio/config.xml"
-    $SUDO sed -i -e "s|_PLUGINS_DIR_|$ORKAUDIO_DIR/plugins/|" "$DESTDIR/etc/orkaudio/config.xml"
-    $SUDO sed -i -e "s|_CAPTURE_PLUGIN_DIR_|$ORKAUDIO_DIR/audiocaptureplugins/voip/.libs/|" "$DESTDIR/etc/orkaudio/config.xml"
-    $SUDO sed -i -e "s|_USER_|$USER|" "$DESTDIR/etc/orkaudio/config.xml"
-  else
-    $SUDO rm -f $DESTDIR/etc/orkaudio/config-devel.xml
-  fi
-
-    printf "\n\n"
+  $SUDO cp -f conf/* $DESTDIR/etc/orkaudio
 }
 
-install_all() {
-  system-detect
-  if [[ "$BASE_DIST" != "debian" && "$BASE_DIST" != "redhat" ]]; then
-    abort "Unsupported linux distribution: $OS/$DIST, we only support Debian and CentOS linux distros"
-  fi
+clean() {
+  test -d "$BUILD_DIR" && rm -rf "$BUILD_DIR"
+  test -d $(readlink -f ../.debug) && rm -rf $(readlink -f ../.debug)
+  for PROJECT in orkbasecxx orkaudio; do
+    pushd "../$PROJECT" &>/dev/null
+    if [[ -f Makefile ]]; then
+      header "Cleaning: $PROJECT"
+      make distclean
+      printf "\n\n"
+    fi
+    popd &>/dev/null
+  done
+}
 
-  SUDO=
-  if ! is-writable "$DESTDIR"; then
-    SUDO=sudo
-  fi
-
-  # VARS
-  BUILD_DIR=$(readlink -f ../.build-"$OS-$DIST-$VER"/)
-
-  OPUS_LIB=opus-1.3.1
-  OPUS_DIR="$BUILD_DIR/$OPUS_LIB"
-
-  SILK_LIB=silk
-  SILK_DIR="$BUILD_DIR/$SILK_LIB/SILKCodec/SILK_SDK_SRC_FIX"
-
-  G729_LIB=bcg729-1.1.1
-  G729_DIR="$BUILD_DIR/$G729_LIB"
-
-  BOOST_LIB=boost_1_79_0
-  BOOST_DIR="$BUILD_DIR/$BOOST_LIB"
-
-  # clean the build directory
-  rm -rf "$BUILD_DIR"
-
+release() {
+  DEBUG=false  
+  clean
   install_binary_deps
-  if [[ "$BASE_DIST" = "redhat" ]]; then
-    source /opt/rh/devtoolset-9/enable
-  fi
-
-  # install orkaudio
   install_source_deps
-  install_orkaudio
-  install_conf
+  configure
+  install
 
-  printf "\n\n"
+  $SUDO sed -i -E \
+    -e "s|_PLUGINS_DIR_|/usr/lib/orkaudio/plugins/|" \
+    -e "s|_AUDIO_DIR_|/var/log/orkaudio/audio|" \
+    -e "s|_CAPTURE_PLUGIN_DIR_|/usr/lib|" \
+    -e "s|_USER_|root|" \
+    "$DESTDIR/etc/orkaudio/config.xml" 
+
+  $SUDO sed -i -E \
+    -e "s|_ORKAUDIO_LOG_|/var/log/orkaudio/orkaudio.log|" \
+    -e "s|_MESSAGES_LOG_|/var/log/orkaudio/messages.log|" \
+    -e "s|_TAPELIST_LOG_|/var/log/orkaudio/tapelist.log|" \
+    "$DESTDIR/etc/orkaudio/logging.properties"
 }
 
-DESTDIR=
-DEBUG=false
-DEVEL=false
-while getopts ":hd:" OPT; do
-  case "$OPT" in
-  h)
-    usage
-    exit 0
-    ;;
-  d)
-    DESTDIR="$OPTARG"
-    ;;
-  :)
-    abort "$(basename $0): Must supply an argument to -$OPTARG"
-    ;;
-  ?)
-    abort "$(basename $0): Invalid option: -${OPTARG}"
-    ;;
-  esac
-done
+development() {
+  DEBUG=true  
+  DESTDIR=$(readlink -f "../.debug")
+  clean
+  install_binary_deps
+  install_source_deps
+  configure
+  install
 
-# skip all parsed options and check if there are more options, 
-shift $(( OPTIND - 1 ))
+  $SUDO sed -i -E \
+    -e "s|_PLUGINS_DIR_|$DESTDIR/usr/lib/orkaudio/plugins/|" \
+    -e "s|_AUDIO_DIR_|$DESTDIR/var/log/orkaudio/audio|" \
+    -e "s|_CAPTURE_PLUGIN_DIR_|$DESTDIR/usr/lib|" \
+    -e "s|_USER_|$USER|" \
+    "$DESTDIR/etc/orkaudio/config.xml"
+
+  $SUDO sed -i -E \
+    -e "s|_ORKAUDIO_LOG_|$DESTDIR/var/log/orkaudio/orkaudio.log|" \
+    -e "s|_MESSAGES_LOG_|$DESTDIR/var/log/orkaudio/messages.log|" \
+    -e "s|_TAPELIST_LOG_|$DESTDIR/var/log/orkaudio/tapelist.log|" \
+    "$DESTDIR/etc/orkaudio/logging.properties"
+
+  for FILENAME in config.xml logging.properties localpartymap.csv skinnyglobalnumbers.csv area-codes-recorded-side.csv; do
+    ln -sf "$DESTDIR/etc/orkaudio/$FILENAME" "$DESTDIR/usr/sbin/$FILENAME"
+  done
+}
+
 if [[ $# -eq 0 ]]; then
   usage
 elif [[ $# -eq 1 ]]; then
-  if [[ "$1" = "release" ]]; then
-    install_all
-  elif [[ "$1" = "debug" ]]; then
-    DEBUG=true
-    install_all
+  if [[ "$1" = "bin-deps" ]]; then
+    install_binary_deps
+  elif [[ "$1" = "src-deps" ]]; then
+    install_source_deps
+  elif [[ "$1" = "clean" ]]; then
+    clean
+  elif [[ "$1" = "configure" ]]; then
+    configure
+  elif [[ "$1" = "install" ]]; then
+    install
+  elif [[ "$1" = "rel" ]]; then
+    release
   elif [[ "$1" = "dev" ]]; then
-    DEVEL=true
-    DEBUG=true
-    install_all
+    development
   else
-    abort "$(basename $0): Invalid install mode: '$1', it must be one of: [release, debug, dev]"
+    abort "$(basename $0): Invalid option: '$1'"
   fi
 elif [[ $# -gt 1 ]]; then
   abort "$(basename $0): Invalid number of options: '$*'"
 fi
+

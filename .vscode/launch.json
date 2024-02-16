@@ -7,16 +7,18 @@
         {
             "name": "Debug OrkAudio",
             "type": "cppdbg",
-            "preLaunchTask": "Build OrkAudio",
             "request": "launch",
-            "program": "${workspaceFolder}/orkaudio/orkaudio",
+            "program": "${workspaceFolder}/.debug/usr/sbin/orkaudio",
             "args": ["debug"],
-            "stopAtEntry": false,
-            "cwd": "${fileDirname}",
-            "environment": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}/.debug/usr/sbin",
             "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "${workspaceFolder}/interactivetel/gdb-root.sh",
+            // "miDebuggerPath": "${workspaceFolder}/interactivetel/gdb-root.sh",,
+            "environment": [{
+                "name": "LD_LIBRARY_PATH",
+                "value": "${workspaceFolder}/.debug/usr/lib"
+            }],
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

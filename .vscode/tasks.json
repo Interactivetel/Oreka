@@ -4,36 +4,82 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build OrkBase",
+            "label": "Build: OrkBase",
             "type": "shell",
             "command": "make -j",
             "options": {
                 "cwd": "${workspaceFolder}/orkbasecxx"
             },
-            "problemMatcher": "$gcc",
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": "autoDetect"
+            },
             "group": "build",
             "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": true,
-                "clear": true
-            }
+                "clear": true,
+                "panel": "dedicated"
+            },
         },
         {
-            "label": "Build OrkAudio",
+            "label": "Build: OrkAudio",
             "type": "shell",
             "command": "make -j",
-            "dependsOn": ["Build OrkBase"],
             "options": {
                 "cwd": "${workspaceFolder}/orkaudio"
             },
-            "problemMatcher": "$gcc",
+            "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": "autoDetect"
+            },
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "dependsOn": [
+                "Build: OrkBase"
+            ],
+            "dependsOrder": "sequence",
+            "presentation": {
+                "clear": true,
+                "panel": "dedicated"
             }
+        },
+        {
+            "label": "Clean: OrkBase",
+            "type": "shell",
+            "command": "make clean",
+            "options": {
+                "cwd": "${workspaceFolder}/orkbasecxx"
+            },
+            "problemMatcher": [],
+            "group": "build",
+            "presentation": {
+                "clear": true,
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Clean: OrkAudio",
+            "type": "shell",
+            "command": "make clean",
+            "options": {
+                "cwd": "${workspaceFolder}/orkaudio"
+            },
+            "problemMatcher": [],
+            "group": "build",
+            "presentation": {
+                "clear": true,
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Clean All",
+            "type": "shell",
+            "dependsOn": [
+                "Clean OrkAudio",
+                "Clean OrkBase"
+            ],
+            "group": "build"
         }
     ]
 }

@@ -2,9 +2,9 @@
     <!-- This is an example configuration file for the Oreka orkaudio capture service on Linux -->
     <!-- Copy this to config.xml and modify according to taste -->
 
-    <!-- <PluginsDirectory>_PLUGINS_DIR_</PluginsDirectory> -->
+    <PluginsDirectory>_PLUGINS_DIR_</PluginsDirectory>
 
-    <AudioOutputPath>/var/log/orkaudio/audio</AudioOutputPath>
+    <AudioOutputPath>_AUDIO_DIR_</AudioOutputPath>
 
     <!-- Uncomment the plugin you want to use: -->
     <!-- Use libvoip.so for SIP, Cisco Skinny and pure RTP -->
@@ -14,7 +14,7 @@
     <!--<CapturePlugin>libh323voip.so</CapturePlugin>-->
     <!--<CapturePlugin>liborksipua.so</CapturePlugin>-->
 
-    <CapturePluginPath>/usr/lib</CapturePluginPath>
+    <CapturePluginPath>_CAPTURE_PLUGIN_DIR_</CapturePluginPath>
 
     <!-- Audio file storage format: choose from: native, gsm, ulaw, alaw, pcmwav, opus -->
     <StorageAudioFormat>pcmwav</StorageAudioFormat>
@@ -55,10 +55,10 @@
     <!-- <NumBatchThreads>6</NumBatchThreads> -->
     <BatchProcessingEnhancePriority>true</BatchProcessingEnhancePriority>
 
-    <AudioFileOwner>root</AudioFileOwner>
-    <AudioFileGroup>root</AudioFileGroup>
+    <AudioFileOwner>_USER_</AudioFileOwner>
+    <AudioFileGroup>_USER_</AudioFileGroup>
     <AudioFilePermissions>644</AudioFilePermissions>
-    <TapeDurationMinimumSec>2</TapeDurationMinimumSec>
+    <TapeDurationMinimumSec>1</TapeDurationMinimumSec>
 
     <!-- Uncomment the parameter below and fill in a comma-separated -->
     <!-- list of TCP addresses which you wish to open a connection to. -->
@@ -108,10 +108,10 @@
 
         <!-- Use this if you want to force capture from a given list of devices. -->
         <!-- All available devices are listed in orkaudio.log when the service is starting -->
-        <Devices>em2</Devices>
+        <Devices>_IFACE_</Devices>
 
         <!-- Comment out "Devices" tag and uncomment this one to replay a pcap file, it must be pcap, not pcapng -->
-        <!-- <PcapFile>/home/vagrant/Oreka/interactivetel/pcaps/opus.pcap</PcapFile> -->
+        <!-- <PcapFile>_PCAP_FILE_PATH_</PcapFile> -->
 
         <!--<PcapFilter>net 217.14.0.0/16 or host 10.0.0.1</PcapFilter>-->
 
