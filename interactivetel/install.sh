@@ -3,10 +3,6 @@ set -eE
 
 cd "$(dirname "$0")"
 
-. lib.sh
-
-system-detect
-
 
 DESTDIR=${DESTDIR:-}
 PREFIX=${PREFIX:-/usr}
@@ -27,22 +23,46 @@ G729_DIR="$BUILD_DIR/$G729_LIB"
 BOOST_LIB=boost_1_84_0
 BOOST_DIR="$BUILD_DIR/$BOOST_LIB"
 
-CMAKE=cmake
-if [[ "$BASE_DIST" == "redhat" ]]; then
-  CMAKE=cmake3
-fi
-
 SUDO=
 if [[ -n "$A" && -w "$(dirname "$A")" ]]; then
   SUDO=sudo
 fi
+
+# initialize the terminal with color support
+if [[ -t 1 ]]; then
+  # see if it supports colors...
+  ncolors=$(tput colors)
+
+  if [[ -n "$ncolors" && $ncolors -ge 8 ]]; then
+    normal="$(tput sgr0)"
+    red="$(tput setaf 1)"
+    green="$(tput setaf 2)"
+    yellow="$(tput setaf 3)"
+    blue="$(tput setaf 4)"
+    magenta="$(tput setaf 5)"
+    cyan="$(tput setaf 6)"
+    ul="$(tput smul)"
+  fi
+fi
+
+header() {
+  printf "$yellow#####################################################################$normal\n"
+  printf "$yellow# $1 $normal\n"
+  printf "$yellow#####################################################################$normal\n\n"
+}
+
+info() {
+  printf "$yellow$1$normal\n"
+}
+
+
 
 usage() {
   info "::: Description:"
   info ":::   Install OrkAudio in production or development mode"
   info ":::"
   info "::: Supported systems:"
-  info ":::   Debian, Ubuntu, CentOS and RedHat."
+  info ":::   Debian based systems"
   info ":::"
   info "::: Usage:"
   info ":::   $(basename $0) <bin-deps | src-deps | clean | configure | install | rel | dev>"
@@ -64,45 +84,19 @@ usage() {
 install_binary_deps() {
   header "Installing binary dependencies"
 
-  # install base dependencies
-  if [[ "$BASE_DIST" = "redhat" ]]; then
-    # fix centos 6 repositories (EOL)
-    fix-centos6-repos
+  # update the system
+  sudo apt-get -y update
+  sudo apt-get -y upgrade
 
-    # install custom repositories
-    install-custom-repos
+  # install development tools
+  sudo apt-get -y install git curl wget mc htop libtool libtool-bin cmake sngrep net-tools dnsutils build-essential systemd-timesyncd
 
-    # update the system
-    sudo yum -y update
+  # orkaudio dependencies, log4cxx and log4cxx-devel: v0.10.0
+  sudo apt-get -y install libapr1-dev libpcap-dev libboost-all-dev libxerces-c-dev libsndfile1-dev \
+    libspeex-dev libopus-dev libbcg729-dev libssl-dev liblog4cxx-dev libcap-dev
 
-    # install development tools
-    sudo yum install -y git curl wget mc htop libtool rpmdevtools devtoolset-9 cmake3 sngrep \
-      net-tools bind-utils
-
-    # orkaudio dependencies, log4cxx and log4cxx-devel: v0.10.0
-    sudo yum -y install apr-devel libpcap-devel xerces-c-devel libsndfile-devel \
-      speex-devel libogg-devel openssl-devel log4cxx-devel libcap-devel
-  elif [[ "$BASE_DIST" = "debian" ]]; then
-    # update the system
-    sudo apt-get -y update
-    sudo apt-get -y upgrade
-
-    # install development tools
-    sudo apt-get -y install git curl wget mc htop libtool libtool-bin cmake sngrep net-tools dnsutils build-essential systemd-timesyncd
-
-    # orkaudio dependencies, log4cxx and log4cxx-devel: v0.10.0
-    sudo apt-get -y install libapr1-dev libpcap-dev libboost-all-dev libxerces-c-dev libsndfile1-dev \
-      libspeex-dev libopus-dev libssl-dev liblog4cxx-dev libcap-dev
-
-    # enable ntp service
-    sudo systemctl enable --now systemd-timesyncd.service
-
-    if [[ "$DIST" = "debian" && "$VER" -ge 11 ]]; then
-      sudo apt-get -y install libbcg729-dev
-    fi
-  else
-    abort "Unsupported linux distribution: $BASE_DIST/$DIST-$VER"
-  fi
+  # enable ntp service
+  sudo systemctl enable --now systemd-timesyncd.service
 
   printf "\n\n"
 }
@@ -134,57 +128,28 @@ install_source_deps() {
   popd &>/dev/null
 
   printf "\n\n"
-
-  # boost
-  if [[ "$BASE_DIST" = "redhat" ]]; then
-    header "Installing boost library at: $BOOST_DIR"
-    wget "https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/$BOOST_LIB.tar.gz" -O "$BUILD_DIR/$BOOST_LIB.tar.gz"
-    tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$BOOST_LIB.tar.gz"
-    printf "\n\n"
-  fi
-
-  # build G729 codec for all dist except debian 11 and up
-  if [[ "$BASE_DIST" = "redhat" || "$DIST" = "debian" && "$VER" -le 10 ]]; then
-    header "Builing G729 lib: $G729_DIR"
-    rm -rf "$G729_DIR"
-    wget https://github.com/Interactivetel/bcg729/archive/refs/tags/1.1.1.tar.gz -O "$BUILD_DIR/$G729_LIB.tar.gz"
-    tar -C "$BUILD_DIR" -xpf "$BUILD_DIR/$G729_LIB.tar.gz" && rm -f "$BUILD_DIR/$G729_LIB.tar.gz"
-
-    pushd "$G729_DIR" &>/dev/null
-    $CMAKE . -DCMAKE_INSTALL_PREFIX="$PREFIX" -DENABLE_SHARED=YES -DENABLE_STATIC=YES -DCMAKE_SKIP_INSTALL_RPATH=ON
-    make -j
-    $SUDO make DESTDIR=$DESTDIR install
-    popd &>/dev/null
-  fi
-
-  printf "\n\n"
 }
 
 configure() {
   CPPFLAGS="-DXERCES_3"
   CFLAGS="-I$OPUS_DIR/include -I$SILK_SRC/interface -I$SILK_SRC/src -I$G729_DIR/include"
   CXXFLAGS="-I$OPUS_DIR/include -I$SILK_SRC/interface -I$SILK_SRC/src -I$G729_DIR/include"
-  LDFLAGS="-Wl,-rpath=/usr/lib,-L$SILK_SRC -L$OPUS_DIR/.libs -L$(readlink -f ../orkbasecxx/.libs) -L$G729_DIR/src"
-
-  if [[ "$BASE_DIST" = "redhat" ]]; then
-    CPPFLAGS="$CPPFLAGS -I$BOOST_DIR"
-  fi
+  LDFLAGS="-L$SILK_SRC -L$OPUS_DIR/.libs -L$(readlink -f ../orkbasecxx/.libs) -L$G729_DIR/src"
 
   if [[ "$DEBUG" = true ]]; then
     CPPFLAGS="-DDEBUG $CPPFLAGS"
     CFLAGS="-g3 -ggdb3 -Og $CFLAGS"
     CXXFLAGS="-g3 -ggdb3 -Og $CXXFLAGS"
+    # LDFLAGS="-Wl,-rpath=/usr/lib,-L$SILK_SRC -L$OPUS_DIR/.libs -L$(readlink -f ../orkbasecxx/.libs) -L$G729_DIR/src"
   fi
 
   for PROJECT in orkbasecxx orkaudio; do
     pushd "../$PROJECT" &>/dev/null
     header "Configuring: $PROJECT"
-    test -f Makefile && make distclean || :
+    if [[ -f Makefile ]]; then  
+      make distclean
+    fi
     autoreconf -f -i
-    echo $CPPFLAGS
-    echo $CFLAGS
-    echo $CXXFLAGS
-    echo $LDFLAGS
 
     ./configure --prefix="$PREFIX" CPPFLAGS="$CPPFLAGS" CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS"
     printf "\n\n"
@@ -212,7 +177,8 @@ install() {
 
 clean() {
   test -d "$BUILD_DIR" && rm -rf "$BUILD_DIR"
-  test -d $(readlink -f ../.debug) && rm -rf $(readlink -f ../.debug)
+  test -d "$(readlink -f ../.debug  )" && rm -rf "$(readlink -f ../.debug)"
+
   for PROJECT in orkbasecxx orkaudio; do
     pushd "../$PROJECT" &>/dev/null
     if [[ -f Makefile ]]; then
